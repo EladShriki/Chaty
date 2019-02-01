@@ -3,9 +3,13 @@ package com.example.eladshriki.chaty;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -41,6 +45,9 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
     String host = MainActivity.host;
 
+    RefreshListReciver refreshListReciver = null;
+    Boolean myReceiverIsRegistered = false;
+
     EditText etChat;
     Button btnSend, btnPic;
     ArrayList<Message> messages;
@@ -49,7 +56,6 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     Activity context;
     ListView lvMsg;
     MessageAdapter messageAdapter;
-    Sleep thread;
     LoginSystem loginSystem = MainActivity.loginSystem;
     ChatsDB chatsDB;
     Uri imgURI;
@@ -65,6 +71,8 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
+        refreshListReciver = new RefreshListReciver();
+
         chatsDB = new ChatsDB(this);
 
         sender = loginSystem.getUsername();
@@ -79,7 +87,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         else
             messages = new ArrayList<Message>();
 
-        MessageAdapter messageAdapter = new MessageAdapter(this,0,messages);
+        messageAdapter = new MessageAdapter(this,0,messages);
 
         context = (Activity)this;
 
@@ -92,25 +100,34 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         lvMsg = (ListView) findViewById(R.id.lvMsg);
         lvMsg.setAdapter(messageAdapter);
+        lvMsg.setSelection(messages.size());
 
-        thread = new Sleep();
-        thread.start();
+    }
 
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        if (!myReceiverIsRegistered) {
+            registerReceiver(refreshListReciver, new IntentFilter("com.example.eladshriki.chaty"));
+            myReceiverIsRegistered = true;
+        }
+    }
+
+    @Override
+    public void onPause()
+    {
+        super.onPause();
+        if (myReceiverIsRegistered) {
+            unregisterReceiver(refreshListReciver);
+            myReceiverIsRegistered = false;
+        }
     }
 
     @Override
     public void onBackPressed()
     {
         startActivity(new Intent(this,MainPageActivity.class));
-    }
-
-    @Override
-    protected  void onStop()
-    {
-        super.onStop();
-        if(!intentCamera)
-            thread.kill();
-        intentCamera = false;
     }
 
     @Override
@@ -130,6 +147,23 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         {
             showPictureDialog();
         }
+    }
+
+    public void refreshList()
+    {
+        ChatsDB db = new ChatsDB(context);
+        db.open();
+        final ArrayList<Message> message = db.getAllMessagesByName(reciver);
+        db.close();
+        final MessageAdapter messageAdapter = new MessageAdapter(context,0,message);
+        lvMsg.post(new Runnable() {
+            @Override
+            public void run()
+            {
+                lvMsg.setAdapter(messageAdapter);
+                lvMsg.setSelection(message.size());
+            }
+        });
     }
 
     private void showPictureDialog(){
@@ -312,10 +346,6 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         bitmap.compress(Bitmap.CompressFormat.JPEG, 50 /*ignored for PNG*/, blob);
         byte[] bitmapdata = blob.toByteArray();
         return bitmapdata;
-//        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-//        bitmap.compress(Bitmap.CompressFormat.JPEG, 0, outputStream);
-//        byte[] temp = outputStream.toByteArray();
-//        return temp;
     }
 
     public void sendImg(byte[] bytes)
@@ -412,99 +442,15 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public void getMessage() {
-        boolean getMessage = false;
-        String urlParameters = "sender="+sender+"&reciver="+reciver + "&Send=" + 0 + "&Img="+0;
-        try {
-            String url = host+"/TestServer/Chat";
-            HttpsURLConnection conn = CustomCAHttpProvider.getConnection(this,url);
-
-            conn.setDoOutput(true);
-
-            OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream());
-
-            writer.write(urlParameters);
-            writer.flush();
-
-            String line;
-            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-
-            String username=null,msg=null;
-
-
-            while ((line = reader.readLine()) != null)
-            {
-                getMessage = true;
-
-                username = line.substring(0,line.indexOf(","));
-                line = line.substring(line.indexOf(",")+1);
-                msg = line.substring(0,line.indexOf(","));
-                line = line.substring(line.indexOf(",")+1);
-                String date = line.substring(0,line.indexOf(","));
-                line = line.substring(line.indexOf(",")+1);
-                String img = line;
-                if(!img.equals("null")) {
-                    String[] byteValues = img.substring(1, img.length() - 1).split(",");
-                    byte[] imgByte = new byte[byteValues.length];
-
-                    for (int i=0, len=imgByte.length; i<len; i++)
-                        imgByte[i] = Byte.parseByte(byteValues[i].trim());
-
-
-                    Message temp = new Message(username, imgByte, reciver, loginSystem.getUsername(), date);
-                    messages.add(temp);
-                    chatsDB.open();
-                    chatsDB.createMessage(temp);
-                    chatsDB.close();
-                }
-                else {
-                    Message temp = new Message(username, msg, reciver, loginSystem.getUsername(), date);
-                    messages.add(temp);
-                    chatsDB.open();
-                    chatsDB.createMessage(temp);
-                    chatsDB.close();
-                }
-            }
-            writer.close();
-            reader.close();
-
-            if(getMessage) {
-                messageAdapter = new MessageAdapter(context, 0, messages);
-
-                lvMsg.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        lvMsg.setAdapter(messageAdapter);
-                        lvMsg.setSelection(messages.size());
-                    }
-                });
-            }
-        } catch (Exception e) {
-            Log.i("Error",e.getMessage().toString());
-        }
-    }
-
-    class Sleep extends Thread
-    {
-        private boolean alive = true;
-
-        public void kill()
-        {
-            alive = false;
-        }
-
+    class RefreshListReciver extends BroadcastReceiver {
 
         @Override
-        public void run()
+        public void onReceive(Context context, Intent intent)
         {
-            while (alive) {
-                getMessage();
-                try {
-                    sleep(5000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+            refreshList();
+            NotificationManager mNotificationManager =
+                    (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            mNotificationManager.cancel(0);
         }
     }
 }

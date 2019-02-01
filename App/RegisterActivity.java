@@ -66,7 +66,8 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                         try {
                             MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
                             messageDigest.update(password.getBytes());
-                            String hashPass = new String(messageDigest.digest());
+                            String hashPass = bytesToHex(messageDigest.digest());
+
                             String urlParameters = "username=" + username + "&password=" + hashPass + "&Email=" + eMail + "&nameCheck=" + 1;
                             String url = host + "/TestServer/Register";
                             HttpsURLConnection conn = CustomCAHttpProvider.getConnection(this, url);
@@ -108,6 +109,16 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
         {
             startActivity(new Intent(this,MainActivity.class));
         }
+    }
+
+    private String bytesToHex(byte[] hash) {
+        StringBuffer hexString = new StringBuffer();
+        for (int i = 0; i < hash.length; i++) {
+            String hex = Integer.toHexString(0xff & hash[i]);
+            if(hex.length() == 1) hexString.append('0');
+            hexString.append(hex);
+        }
+        return hexString.toString();
     }
 
     public boolean goodPassword(String password)

@@ -79,6 +79,29 @@ public class ChatsDB extends SQLiteOpenHelper
 //        return temp;
     }
 
+    public ArrayList<Message> getAllMessagesByName(String name) {
+
+        ArrayList<Message> l = new ArrayList<Message>();
+        String selection = COLUMN_CHAT_NAME +" =?";
+        String[] args = {name};
+        Cursor cursor=database.query(ChatsDB.TABLE_MSG, allColumns, selection, args, null, null, null);
+
+        if(cursor.getCount()>0)
+        {
+            while(cursor.moveToNext())
+            {
+                String username=cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_USERNAME));
+                String text =cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_TEXT));
+                String chatName = cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_CHAT_NAME));
+                String sender = cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_SENDER));
+                String date = cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_DATE));
+                byte[] img = cursor.getBlob(cursor.getColumnIndex(ChatsDB.COLUMN_IMG));
+                Message c=new Message(chatName,username,sender,text,date,img);
+                l.add(c);
+            }
+        }
+        return l;
+    }
 
     public ArrayList<Message> getAllMessages() {
 

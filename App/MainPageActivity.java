@@ -1,5 +1,6 @@
 package com.example.eladshriki.chaty;
 
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -47,7 +48,7 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
 
         chatsDB.close();
 
-        lvChats = (ListView)findViewById(R.id.lvChats);
+        lvChats = (ListView) findViewById(R.id.lvChats);
         lvChats.setOnItemClickListener(this);
 
         sortMessages(messages);
@@ -57,6 +58,10 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
         Toolbar toolbar = findViewById(R.id.toolBar);
         setSupportActionBar(toolbar);
 
+        if (!isMyServiceRunning(MessageService.class)) {
+            Intent i = new Intent(this, MessageService.class);
+            startService(i);
+        }
     }
 
     @Override
@@ -123,9 +128,8 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
     {
         boolean found = false;
         chats = new ArrayList<Chat>();
-        for(int i=0;i<messages.size();i++)
-        {
-            if(messages.get(i).getUsername().toLowerCase().equals(loginSystem.getUsername().toLowerCase())) {
+        for (int i = 0; i < messages.size(); i++) {
+            if (messages.get(i).getUsername().toLowerCase().equals(loginSystem.getUsername().toLowerCase())) {
                 found = false;
                 for (int j = 0; j < chats.size(); j++) {
                     if (chats.get(j).getChatName().toLowerCase().equals(messages.get(i).getChatName().toLowerCase())) {
@@ -139,7 +143,7 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
                 }
             }
         }
-        final ChatAdapter chatAdapter = new ChatAdapter(this,0,chats);
+        final ChatAdapter chatAdapter = new ChatAdapter(this, 0, chats);
         lvChats.post(new Runnable() {
             @Override
             public void run() {
@@ -218,5 +222,15 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
         intent.putExtra("Username",chats.get(i).getChatName());
         intent.putExtra("Index",i);
         startActivity(intent);
+    }
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(this.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

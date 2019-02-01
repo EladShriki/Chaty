@@ -50,12 +50,24 @@ public class LoginSystem
         return context;
     }
 
+    private String bytesToHex(byte[] hash) {
+        StringBuffer hexString = new StringBuffer();
+        for (int i = 0; i < hash.length; i++) {
+            String hex = Integer.toHexString(0xff & hash[i]);
+            if(hex.length() == 1) hexString.append('0');
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
+
     public Intent login(Class aClass) throws NoSuchAlgorithmException {
         if(MainActivity.checkLogin)
         {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
             messageDigest.update(password.getBytes());
-            String hashPass = new String(messageDigest.digest());
+            byte[] hash = messageDigest.digest();
+            String hashPass = bytesToHex(hash);
+
             String urlParameters = "username=" + username + "&password=" + hashPass;
             try {
                 String url = host + "/TestServer/login";

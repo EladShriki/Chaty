@@ -10,6 +10,8 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 
+import java.security.NoSuchAlgorithmException;
+
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btnLogin.setOnClickListener(this);
         btnReg.setOnClickListener(this);
         btnPassRest.setOnClickListener(this);
+
     }
 
 
@@ -58,7 +61,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         {
             String username = etUsername.getText().toString();
             String password = etPassword.getText().toString();
-            login(username,password);
+            try {
+                login(username,password);
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            }
         }
         if(btnPassRest==view)
         {
@@ -71,8 +78,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public void login(String username,String password)
-    {
+    public void login(String username,String password) throws NoSuchAlgorithmException {
         loginSystem = new LoginSystem(this,host,username,password);
         Intent intent = loginSystem.login(MainPageActivity.class);
         if(intent!=null)
