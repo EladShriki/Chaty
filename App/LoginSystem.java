@@ -9,6 +9,8 @@ import android.widget.Toast;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -48,10 +50,13 @@ public class LoginSystem
         return context;
     }
 
-    public Intent login(Class aClass)
-    {
-        if(MainActivity.checkLogin) {
-            String urlParameters = "username=" + username + "&password=" + password;
+    public Intent login(Class aClass) throws NoSuchAlgorithmException {
+        if(MainActivity.checkLogin)
+        {
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            messageDigest.update(password.getBytes());
+            String hashPass = new String(messageDigest.digest());
+            String urlParameters = "username=" + username + "&password=" + hashPass;
             try {
                 String url = host + "/TestServer/login";
                 HttpsURLConnection conn = CustomCAHttpProvider.getConnection(context,url);
@@ -84,6 +89,7 @@ public class LoginSystem
         }
         return null;
     }
+
 
     public Intent logout()
     {

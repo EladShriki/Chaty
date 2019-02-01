@@ -13,6 +13,7 @@ import android.widget.Toast;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.security.MessageDigest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,9 +61,13 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                 String eMail = etREmail.getText().toString();
 
                 if(goodPassword(password)) {
-                    if (realEmail(eMail)) {
-                        String urlParameters = "username=" + username + "&password=" + password + "&Email=" + eMail + "&nameCheck=" + 1;
+                    if (realEmail(eMail))
+                    {
                         try {
+                            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+                            messageDigest.update(password.getBytes());
+                            String hashPass = new String(messageDigest.digest());
+                            String urlParameters = "username=" + username + "&password=" + hashPass + "&Email=" + eMail + "&nameCheck=" + 1;
                             String url = host + "/TestServer/Register";
                             HttpsURLConnection conn = CustomCAHttpProvider.getConnection(this, url);
 
