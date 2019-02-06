@@ -82,8 +82,11 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         if(index!=-1)
             chat = (Chat) MainPageActivity.chats.get(index);
 
-        if(chat!=null)
-            messages = chat.getMessages();
+        if(chat!=null) {
+            chatsDB.open();
+            messages = chatsDB.getAllMessagesByName(reciver);
+            chatsDB.close();
+        }
         else
             messages = new ArrayList<Message>();
 
@@ -102,6 +105,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         lvMsg.setAdapter(messageAdapter);
         lvMsg.setSelection(messages.size());
 
+        refreshList();
     }
 
     @Override
@@ -153,15 +157,15 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     {
         ChatsDB db = new ChatsDB(context);
         db.open();
-        final ArrayList<Message> message = db.getAllMessagesByName(reciver);
+        messages = db.getAllMessagesByName(reciver);
         db.close();
-        final MessageAdapter messageAdapter = new MessageAdapter(context,0,message);
+        final MessageAdapter messageAdapter = new MessageAdapter(context,0,messages);
         lvMsg.post(new Runnable() {
             @Override
             public void run()
             {
                 lvMsg.setAdapter(messageAdapter);
-                lvMsg.setSelection(message.size());
+                lvMsg.setSelection(messages.size());
             }
         });
     }
@@ -304,7 +308,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         String root = Environment.getExternalStorageDirectory().toString();
-        File myDir = new File(root + "/saved_images");
+        File myDir = new File(root + "/Chaty/saved_images");
         myDir.mkdirs();
         String fname = new Date() +".jpg";
         File file = new File (myDir, fname);
@@ -447,10 +451,16 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onReceive(Context context, Intent intent)
         {
-            refreshList();
-            NotificationManager mNotificationManager =
-                    (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-            mNotificationManager.cancel(0);
+            try {
+                refreshList();
+                NotificationManager mNotificationManager =
+                        (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                mNotificationManager.cancel(0);
+            }
+            catch (Exception e)
+            {
+                Log.i("Chaty",e.getMessage());
+            }
         }
     }
 }

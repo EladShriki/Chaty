@@ -58,7 +58,8 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
         Toolbar toolbar = findViewById(R.id.toolBar);
         setSupportActionBar(toolbar);
 
-        if (!isMyServiceRunning(MessageService.class)) {
+        if (!isMyServiceRunning(MessageService.class))
+        {
             Intent i = new Intent(this, MessageService.class);
             startService(i);
         }

@@ -3,19 +3,26 @@ package com.example.eladshriki.chaty;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Properties;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    final static String host = "https://10.100.102.4:8443";
+    static String host = "https://10.100.102.4:8443";
     static boolean checkLogin = true;
 
     EditText etUsername, etPassword;
@@ -30,6 +37,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
+
+        try {
+            readHostConfig();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
 //        ChatsDB chatsDB = new ChatsDB(this);
 //        chatsDB.open();
@@ -109,5 +122,50 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             loginSystem = new LoginSystem(this, host, username, password);
             startActivity(new Intent(this,MainPageActivity.class));
         }
+    }
+
+    public void readHostConfig() throws IOException
+    {
+        boolean fileFound = false;
+        String root = Environment.getExternalStorageDirectory().toString();
+        File dir = new File(root + "/Chaty/");
+        dir.mkdir();
+        File file = new File(root + "/Chaty/host.txt");
+        Properties properties = new Properties();
+
+        try
+        {
+            loadProperties(properties, file);
+            fileFound = true;
+        }
+        catch (Exception e)
+        {
+            Log.i("Chaty",e.getMessage());
+        }
+
+        if(!fileFound)
+        {
+            properties.setProperty("host","https://10.100.102.4:8443");
+            file.createNewFile();
+            saveProperties(properties,file);
+        }
+        else
+        {
+            host = properties.getProperty("host");
+        }
+    }
+
+    public void saveProperties(Properties p,File file) throws IOException
+    {
+        FileOutputStream fr = new FileOutputStream(file);
+        p.store(fr, "Properties");
+        fr.close();
+    }
+
+    public void loadProperties(Properties p, File file)throws IOException
+    {
+        FileInputStream fi=new FileInputStream(file);
+        p.load(fi);
+        fi.close();
     }
 }
