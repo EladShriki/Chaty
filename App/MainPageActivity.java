@@ -27,11 +27,13 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class MainPageActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
 
+    static String ACTION_START_SERVICE = "13";
     LoginSystem loginSystem = MainActivity.loginSystem;
     static ArrayList<Chat> chats;
     ArrayList<Message> messages;
     ListView lvChats;
     ChatsDB chatsDB;
+    Intent service;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,8 +62,9 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
 
         if (!isMyServiceRunning(MessageService.class))
         {
-            Intent i = new Intent(this, MessageService.class);
-            startService(i);
+            service = new Intent(this, MessageService.class);
+            service.setAction(MainPageActivity.ACTION_START_SERVICE);
+            startService(service);
         }
     }
 
@@ -72,6 +75,7 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
         builder.setMessage("Are u want to logout?");
         builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
+                stopService(service);
                 loginSystem.logout();
                 startActivity(new Intent(getBaseContext(),MainActivity.class));
             }
@@ -105,6 +109,7 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
                 startActivity(new Intent(this,SearchActivity.class));
                 return true;
             case R.id.action_Logout:
+                stopService(service);
                 Intent intent = loginSystem.logout();
                 if(intent!=null)
                     startActivity(intent);

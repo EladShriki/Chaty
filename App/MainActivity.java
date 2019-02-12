@@ -5,15 +5,17 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -26,8 +28,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     static boolean checkLogin = true;
 
     EditText etUsername, etPassword;
-    Button btnLogin, btnReg, btnPassRest;
-    CheckBox cbRemember;
+    Button btnLogin, btnReg, btnHost;
     static LoginSystem loginSystem;
 
     @Override
@@ -52,17 +53,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         loggedIn();
 
-        cbRemember = findViewById(R.id.cbRemember);
-
         etUsername = (EditText)findViewById(R.id.etUserName);
         etPassword = (EditText)findViewById(R.id.etPassword);
         btnLogin = (Button)findViewById(R.id.btnLogin);
         btnReg = (Button)findViewById(R.id.btnReg);
-        btnPassRest = (Button)findViewById(R.id.btnPassRest);
+        btnHost = (Button)findViewById(R.id.btnHost);
 
         btnLogin.setOnClickListener(this);
         btnReg.setOnClickListener(this);
-        btnPassRest.setOnClickListener(this);
+        btnHost.setOnClickListener(this);
 
     }
 
@@ -80,10 +79,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 e.printStackTrace();
             }
         }
-        if(btnPassRest==view)
+        if(btnHost==view)
         {
-            String username = etUsername.getText().toString();
+            AlertDialog.Builder mBuilder = new AlertDialog.Builder(MainActivity.this);
+            View view1 = getLayoutInflater().inflate(R.layout.host_dialog,null);
+            final EditText etHost = (EditText)view1.findViewById(R.id.etHost);
+            etHost.setText(host);
+            Button btnHost = (Button)view1.findViewById(R.id.btnDialog);
 
+            btnHost.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view)
+                {
+                    changeHostConfig(etHost.getText().toString());
+                    Toast.makeText(MainActivity.this, "Host Changed Successfully!", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            mBuilder.setView(view1);
+            AlertDialog dialog = mBuilder.create();
+            dialog.show();
         }
         if(btnReg==view)
         {
@@ -121,6 +136,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         {
             loginSystem = new LoginSystem(this, host, username, password);
             startActivity(new Intent(this,MainPageActivity.class));
+        }
+    }
+
+    public void changeHostConfig(String newHost)
+    {
+        String root = Environment.getExternalStorageDirectory().toString();
+        FileInputStream inputStream = null;
+        FileOutputStream outputStream = null;
+        try {
+            inputStream = new FileInputStream(root + "/Chaty/host.txt");
+            outputStream = new FileOutputStream(root + "/Chaty/host.txt");
+        } catch (FileNotFoundException e) {
+            Log.i("Chaty",e.getMessage());
+        }
+        Properties properties = new Properties();
+        try {
+            properties.load(inputStream);
+            properties.setProperty("host",newHost);
+            properties.store(outputStream,null);
+            inputStream.close();
+            outputStream.close();
+        } catch (IOException e) {
+            Log.i("Chaty",e.getMessage());
         }
     }
 

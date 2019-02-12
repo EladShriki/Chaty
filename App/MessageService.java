@@ -22,6 +22,7 @@ public class MessageService extends Service {
 
     ChatsDB chatsDB = new ChatsDB(this);
     private NotificationManager mNotificationManager;
+    boolean alive = false;
 
     public MessageService() {
     }
@@ -29,14 +30,17 @@ public class MessageService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i("Chaty", "Start Getting Messeges!");
-        Thread thread = new Sleep();
+        alive = true;
+        Thread thread = new Sleep();;
         thread.start();
 
         return Service.START_STICKY;
     }
 
     @Override
-    public void onDestroy() {
+    public void onDestroy()
+    {
+        alive = false;
         super.onDestroy();
     }
 
@@ -151,10 +155,12 @@ public class MessageService extends Service {
         mNotificationManager.notify(0, mBuilder.build());
     }
 
-    class Sleep extends Thread {
+    class Sleep extends Thread
+    {
         @Override
-        public void run() {
-            while (true)
+        public void run()
+        {
+            while (alive)
             {
                 if(MainActivity.loginSystem.getUsername()!=null)
                     getMessage();
