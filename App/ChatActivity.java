@@ -77,18 +77,20 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         sender = loginSystem.getUsername();
         reciver = getIntent().getExtras().getString("Username");
-        int index = getIntent().getExtras().getInt("Index");
+        //int index = getIntent().getExtras().getInt("Index");
 
-        if(index!=-1)
-            chat = (Chat) MainPageActivity.chats.get(index);
+//        if(index!=-1)
+//            chat = (Chat) MainPageActivity.chats.get(index);
+//
+//        if(chat!=null) {
+//            chatsDB.open();
+//            messages = chatsDB.getAllMessagesByName(reciver);
+//            chatsDB.close();
+//        }
+//        else
+//            messages = new ArrayList<Message>();
 
-        if(chat!=null) {
-            chatsDB.open();
-            messages = chatsDB.getAllMessagesByName(reciver);
-            chatsDB.close();
-        }
-        else
-            messages = new ArrayList<Message>();
+        messages = new ArrayList<Message>();
 
         messageAdapter = new MessageAdapter(this,0,messages);
 

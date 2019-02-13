@@ -1,6 +1,5 @@
 package com.example.eladshriki.chaty;
 
-import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -27,7 +26,6 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class MainPageActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
 
-    static String ACTION_START_SERVICE = "13";
     LoginSystem loginSystem = MainActivity.loginSystem;
     static ArrayList<Chat> chats;
     ArrayList<Message> messages;
@@ -60,12 +58,8 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
         Toolbar toolbar = findViewById(R.id.toolBar);
         setSupportActionBar(toolbar);
 
-        if (!isMyServiceRunning(MessageService.class))
-        {
-            service = new Intent(this, MessageService.class);
-            service.setAction(MainPageActivity.ACTION_START_SERVICE);
-            startService(service);
-        }
+        service = new Intent(this, MessageService.class);
+        startService(service);
     }
 
     @Override
@@ -228,15 +222,5 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
         intent.putExtra("Username",chats.get(i).getChatName());
         intent.putExtra("Index",i);
         startActivity(intent);
-    }
-
-    private boolean isMyServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(this.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
     }
 }

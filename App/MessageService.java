@@ -15,21 +15,40 @@ import android.util.Log;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.Stack;
 
 import javax.net.ssl.HttpsURLConnection;
+
+import static com.example.eladshriki.chaty.App.CHANNEL_ID;
 
 public class MessageService extends Service {
 
     ChatsDB chatsDB = new ChatsDB(this);
     private NotificationManager mNotificationManager;
+    private int notificationID;
+    private int id;
+    private ArrayList<msgGroup> msgGroups;
     boolean alive = false;
 
     public MessageService() {
     }
 
     @Override
+    public void onCreate() {
+        super.onCreate();
+        notificationID = 2;
+        alive = true;
+        msgGroups = new ArrayList<msgGroup>();
+        id = 1;
+    }
+
+    @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.i("Chaty", "Start Getting Messeges!");
+
+        startServiceForeground();
+
         alive = true;
         Thread thread = new Sleep();;
         thread.start();
@@ -47,6 +66,22 @@ public class MessageService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    public void startServiceForeground()
+    {
+        Intent intent = new Intent(this,MainPageActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this,0,intent,0);
+
+        Notification notification = new NotificationCompat.Builder(this,CHANNEL_ID)
+                .setContentTitle("Chaty")
+                .setContentText("Chaty is running")
+                .setSmallIcon(R.drawable.ic_launcher_background)
+                .setContentIntent(pendingIntent)
+                .setDefaults(0)
+                .build();
+
+        startForeground(1,notification);
     }
 
     public void getMessage() {
@@ -90,6 +125,7 @@ public class MessageService extends Service {
                     chatsDB.open();
                     chatsDB.createMessage(temp);
                     chatsDB.close();
+                    addToList(new msgNotification(username,"Image"));
                 }
                 else
                 {
@@ -97,8 +133,14 @@ public class MessageService extends Service {
                     chatsDB.open();
                     chatsDB.createMessage(temp);
                     chatsDB.close();
+                    addToList(new msgNotification(username,msg));
                 }
-                createNotification(username);
+                if (!img.equals("null")) {
+                    createNotification(username);
+                }
+                else {
+                    createNotification(username);
+                }
                 sendOutBoradcast();
             }
             writer.close();
@@ -119,40 +161,99 @@ public class MessageService extends Service {
         sendBroadcast(i);
     }
 
+    public void createSummary()
+    {
+        Notification summaryNotification =
+                new NotificationCompat.Builder(this, CHANNEL_ID)
+                        .setContentTitle("Chaty")
+                        .setContentText("You have "+msgGroups.size()+" new Messages")
+                        .setSmallIcon(R.drawable.ic_launcher_background)
+                        .setStyle(new NotificationCompat.InboxStyle()
+                                .setBigContentTitle(msgGroups.size()+ " new messages")
+                                .setSummaryText("You have "+msgGroups.size()+" new Messages"))
+                        .setGroup("Messages")
+                        .setGroupSummary(true)
+                        .build();
+        NotificationManager notificationManager =
+                (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            String channelId = CHANNEL_ID;
+            NotificationChannel channel = new NotificationChannel(channelId,
+                    "Messages",
+                    NotificationManager.IMPORTANCE_LOW);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        notificationManager.notify(0, summaryNotification);
+    }
+
     public void createNotification(String sender)
     {
+        msgGroup msg = getMsgGroup(sender);
+
         NotificationCompat.Builder mBuilder =
-                new NotificationCompat.Builder(this.getApplicationContext(), "notify_001");
-        mBuilder.setAutoCancel(true);
-        Intent ii = new Intent(this.getApplicationContext(), MainPageActivity.class);
+                new NotificationCompat.Builder(this.getApplicationContext(), "Messeges");
+
+        Intent ii = new Intent(this.getApplicationContext(), ChatActivity.class);
+        ii.putExtra("Username",sender);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, ii, 0);
 
-        NotificationCompat.BigTextStyle bigText = new NotificationCompat.BigTextStyle();
-        bigText.bigText("New Message from "+ sender);
-        bigText.setBigContentTitle("Chaty");
-        //bigText.setSummaryText("Text in detail");
-
+        mBuilder.setAutoCancel(true);
         mBuilder.setContentIntent(pendingIntent);
         mBuilder.setSmallIcon(R.mipmap.ic_launcher_round);
-        mBuilder.setContentTitle("Chaty");
-        mBuilder.setContentText("New Message from "+ sender);
+        mBuilder.setContentTitle(msg.getName());
+
+        NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
+
+        for(int i=0;i<msg.getMessages().size();i++)
+            inboxStyle.addLine(msg.getMessages().get(i).getMsg());
+
+        mBuilder.setStyle(inboxStyle);
+        mBuilder.setGroup("Messages");
+
         mBuilder.setPriority(Notification.PRIORITY_MAX);
-//        mBuilder.setStyle(bigText);
 
         mNotificationManager =
                 (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
 
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            String channelId = "YOUR_CHANNEL_ID";
+            String channelId = "Messeges";
             NotificationChannel channel = new NotificationChannel(channelId,
-                    "Channel human readable title",
+                    "Messeges",
                     NotificationManager.IMPORTANCE_DEFAULT);
             mNotificationManager.createNotificationChannel(channel);
             mBuilder.setChannelId(channelId);
         }
 
-        mNotificationManager.notify(0, mBuilder.build());
+        mNotificationManager.notify(msg.getId(), mBuilder.build());
+    }
+
+    public msgGroup getMsgGroup(String sender)
+    {
+        for(int i=0;i<msgGroups.size();i++)
+            if(msgGroups.get(i).getName().equals(sender))
+                return msgGroups.get(i);
+        return null;
+    }
+
+    public void addToList(msgNotification msg)
+    {
+        boolean added = false;
+        for(int i=0;i<msgGroups.size();i++)
+        {
+            if(msgGroups.get(i).getName().equals(msg.getSender())) {
+                msgGroups.get(i).getMessages().add(msg);
+                added = true;
+            }
+        }
+        if(!added)
+        {
+            msgGroups.add(new msgGroup(notificationID,msg.getSender(),msg));
+            notificationID++;
+        }
     }
 
     class Sleep extends Thread
@@ -162,8 +263,10 @@ public class MessageService extends Service {
         {
             while (alive)
             {
-                if(MainActivity.loginSystem.getUsername()!=null)
+                if(MainActivity.loginSystem.getUsername()!=null) {
                     getMessage();
+                    createSummary();
+                }
                 try {
                     sleep(5000);
                 } catch (InterruptedException e) {
