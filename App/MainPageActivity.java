@@ -3,6 +3,13 @@ package com.example.eladshriki.chaty;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -134,12 +141,11 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
                 for (int j = 0; j < chats.size(); j++) {
                     if (chats.get(j).getChatName().toLowerCase().equals(messages.get(i).getChatName().toLowerCase())) {
                         found = true;
-                        chats.get(j).addMessages(messages.get(i));
                         break;
                     }
                 }
                 if (!found) {
-                    chats.add(new Chat(messages.get(i).getChatName(), messages.get(i)));
+                    chats.add(new Chat(messages.get(i).getChatName(), getProfileImg(messages.get(i).getChatName())));
                 }
             }
         }
@@ -150,6 +156,94 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
                 lvChats.setAdapter(chatAdapter);
             }
         });
+    }
+
+    private Bitmap getCircleBitmap(Bitmap bitmap) {
+
+        Bitmap output;
+        Rect srcRect, dstRect;
+        float r;
+        final int width = bitmap.getWidth();
+        final int height = bitmap.getHeight();
+
+        if (width > height){
+            output = Bitmap.createBitmap(height, height, Bitmap.Config.ARGB_8888);
+            int left = (width - height) / 2;
+            int right = left + height;
+            srcRect = new Rect(left, 0, right, height);
+            dstRect = new Rect(0, 0, height, height);
+            r = height / 2;
+        }else{
+            output = Bitmap.createBitmap(width, width, Bitmap.Config.ARGB_8888);
+            int top = (height - width)/2;
+            int bottom = top + width;
+            srcRect = new Rect(0, top, width, bottom);
+            dstRect = new Rect(0, 0, width, width);
+            r = width / 2;
+        }
+
+        Canvas canvas = new Canvas(output);
+
+        final int color = 0xff424242;
+        final Paint paint = new Paint();
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        canvas.drawCircle(r, r, r, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, srcRect, dstRect, paint);
+
+        bitmap.recycle();
+
+        return output;
+    }
+
+    public Bitmap getProfileImg(String name)
+    {
+        String status=null,image=null;
+        String urlParameters = "username="+name+"&changeStatus=0&changeImage=0";
+        try {
+            String url = MainActivity.host+"/TestServer/Profile";
+            HttpsURLConnection conn = CustomCAHttpProvider.getConnection(this,url);
+
+            conn.setDoOutput(true);
+
+            OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream());
+
+            writer.write(urlParameters);
+            writer.flush();
+
+            String line;
+            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+            if ((line = reader.readLine()) != null)
+            {
+                status = line.substring(0,line.indexOf(','));
+                image = line.substring(line.indexOf(',')+1);
+            }
+
+            writer.close();
+            reader.close();
+        } catch (Exception e) {
+            Log.i("Chaty",e.getMessage());
+        }
+        if(!image.equals("null")) {
+            String[] byteValues = image.substring(1, image.length() - 1).split(",");
+            byte[] imgByte = new byte[byteValues.length];
+
+            for (int i = 0, len = imgByte.length; i < len; i++)
+                imgByte[i] = Byte.parseByte(byteValues[i].trim());
+
+            Bitmap img = BitmapFactory.decodeByteArray(imgByte, 0, imgByte.length);
+            return img;
+        }
+        else
+        {
+            Bitmap img = BitmapFactory.decodeResource(this.getResources(),
+                    R.drawable.user);
+            return img;
+        }
     }
 
     public void syncHistory(String username)
@@ -220,7 +314,6 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
         Intent intent = new Intent(this,ChatActivity.class);
         intent.putExtra("Username",chats.get(i).getChatName());
-        intent.putExtra("Index",i);
         startActivity(intent);
     }
 }

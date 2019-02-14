@@ -24,7 +24,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     String host = MainActivity.host;
 
     EditText etRUser,etRPass,etREmail;
-    Button btnSub, btnName,btnRLogin;
+    Button btnSub,btnRLogin;
     TextView tvNameCheck;
 
     @Override
@@ -41,11 +41,9 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
         tvNameCheck = (TextView) findViewById(R.id.tvNameCheck);
 
         btnSub = (Button)findViewById(R.id.btnSub);
-        btnName = (Button)findViewById(R.id.btnName);
         btnRLogin = (Button)findViewById(R.id.btnRLogin);
 
         btnSub.setOnClickListener(this);
-        btnName.setOnClickListener(this);
         btnRLogin.setOnClickListener(this);
     }
 
@@ -54,15 +52,15 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
 
         if(view==btnSub)
         {
-            nameCheck();
-            if(tvNameCheck.getText().toString().equals("Username is free!")) {
+            if(nameCheck())
+            {
+                tvNameCheck.setText("");
                 String username = etRUser.getText().toString();
                 String password = etRPass.getText().toString();
                 String eMail = etREmail.getText().toString();
 
-                if(goodPassword(password)) {
-                    if (realEmail(eMail))
-                    {
+                if (goodPassword(password)) {
+                    if (realEmail(eMail)) {
                         try {
                             MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
                             messageDigest.update(password.getBytes());
@@ -87,23 +85,15 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                             }
                             writer.close();
                             reader.close();
-                            Toast.makeText(this, "User Created!", Toast.LENGTH_SHORT).show();
-                            startActivity(new Intent(this,MainActivity.class));
+                            Toast.makeText(this, "User Created!", Toast.LENGTH_LONG).show();
+                            startActivity(new Intent(this, MainActivity.class));
                         } catch (Exception e) {
                         }
                     } else
                         Toast.makeText(this, "Use Gmail mail please!", Toast.LENGTH_SHORT).show();
-                }
-                else
+                } else
                     Toast.makeText(this, "Invalid password!", Toast.LENGTH_SHORT).show();
             }
-            else
-                Toast.makeText(this, "Check Your name First!", Toast.LENGTH_LONG).show();
-
-        }
-        if(view==btnName)
-        {
-            nameCheck();
         }
         if(view==btnRLogin)
         {
@@ -154,7 +144,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
         return false;
     }
 
-    public void nameCheck()
+    public boolean nameCheck()
     {
         String name = etRUser.getText().toString();
         if(goodName(name))
@@ -174,15 +164,22 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                 String line;
                 BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
-                tvNameCheck.setText(line = reader.readLine());
+                line = reader.readLine();
+
 
                 writer.close();
                 reader.close();
+
+                if(line.equals("Username in use!"))
+                    return false;
+                else
+                    return true;
             } catch (Exception e) {
 
             }
         }
         else
             tvNameCheck.setText("The Name is Invalid!");
+        return false;
     }
 }

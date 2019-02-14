@@ -1,68 +1,29 @@
 package com.example.eladshriki.chaty;
 
+import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Chat implements Parcelable
+public class Chat
 {
     private String chatName;
-    private ArrayList<Message> messages;
+    private Bitmap profileImg;
 
-    public Chat(String chatName)
+    public Chat(String chatName,Bitmap img)
     {
-        this.messages = new ArrayList<Message>();
         this.chatName = chatName;
-    }
-
-    public Chat(String chatName,Message message)
-    {
-        this.messages = new ArrayList<Message>();
-        messages.add(message);
-        this.chatName = chatName;
-    }
-
-    public Chat(Parcel in) {
-        this.chatName = in.readString();
-        this.messages = new ArrayList<Message>();
-        in.readTypedList(messages,Message.CREATOR);
-    }
-
-    public static final Creator<Chat> CREATOR = new Creator<Chat>() {
-        @Override
-        public Chat createFromParcel(Parcel in) {
-            return new Chat(in);
-        }
-
-        @Override
-        public Chat[] newArray(int size) {
-            return new Chat[size];
-        }
-    };
-
-    public void addMessages(Message message)
-    {
-        this.messages.add(message);
+        this.profileImg = img;
     }
 
     public String getChatName() {
         return chatName;
     }
 
-    public ArrayList<Message> getMessages() {
-        return messages;
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel parcel, int i) {
-        parcel.writeString(chatName);
-        parcel.writeTypedList(messages);
+    public Bitmap getProfileImg() {
+        return profileImg;
     }
 }

@@ -131,30 +131,8 @@ public class SearchActivity extends AppCompatActivity implements View.OnClickLis
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
         place = i;
         Intent intent = new Intent(this,ChatActivity.class);
-        int index = chatHistory(loginSystem.getUsername(),chatUser);
 
-        intent.putExtra("Index",index);
         intent.putExtra("Username",chatUser);
         startActivity(intent);
-    }
-
-    public int chatHistory(String username,String chatUser)
-    {
-        Chat history = new Chat(chatUser);
-        ChatsDB chatsDB = new ChatsDB(this);
-        chatsDB.open();
-        ArrayList<Message> messages = chatsDB.getAllMessages();
-        chatsDB.close();
-
-        for(int i=0;i<messages.size();i++)
-        {
-            if(messages.get(i).getUsername().toLowerCase().equals(username.toLowerCase()) && messages.get(i).getChatName().toLowerCase().equals(chatUser.toLowerCase()))
-                history.addMessages(messages.get(i));
-        }
-
-        if(MainPageActivity.chats.contains(history))
-            return MainPageActivity.chats.indexOf(history);
-
-        return -1;
     }
 }

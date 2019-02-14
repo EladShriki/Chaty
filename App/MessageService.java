@@ -7,6 +7,14 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.os.Build;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
@@ -27,7 +35,6 @@ public class MessageService extends Service {
     ChatsDB chatsDB = new ChatsDB(this);
     private NotificationManager mNotificationManager;
     private int notificationID;
-    private int id;
     private ArrayList<msgGroup> msgGroups;
     boolean alive = false;
 
@@ -40,7 +47,6 @@ public class MessageService extends Service {
         notificationID = 2;
         alive = true;
         msgGroups = new ArrayList<msgGroup>();
-        id = 1;
     }
 
     @Override
@@ -185,8 +191,8 @@ public class MessageService extends Service {
                     NotificationManager.IMPORTANCE_LOW);
             notificationManager.createNotificationChannel(channel);
         }
-
-        notificationManager.notify(0, summaryNotification);
+        if(msgGroups.size()!=0)
+            notificationManager.notify(0, summaryNotification);
     }
 
     public void createNotification(String sender)
@@ -203,6 +209,7 @@ public class MessageService extends Service {
         mBuilder.setAutoCancel(true);
         mBuilder.setContentIntent(pendingIntent);
         mBuilder.setSmallIcon(R.mipmap.ic_launcher_round);
+        mBuilder.setLargeIcon(getCircleBitmap(getUserImg(sender)));
         mBuilder.setContentTitle(msg.getName());
 
         NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
@@ -229,6 +236,59 @@ public class MessageService extends Service {
         }
 
         mNotificationManager.notify(msg.getId(), mBuilder.build());
+    }
+
+    private Bitmap getCircleBitmap(Bitmap bitmap) {
+
+        Bitmap output;
+        Rect srcRect, dstRect;
+        float r;
+        final int width = bitmap.getWidth();
+        final int height = bitmap.getHeight();
+
+        if (width > height){
+            output = Bitmap.createBitmap(height, height, Bitmap.Config.ARGB_8888);
+            int left = (width - height) / 2;
+            int right = left + height;
+            srcRect = new Rect(left, 0, right, height);
+            dstRect = new Rect(0, 0, height, height);
+            r = height / 2;
+        }else{
+            output = Bitmap.createBitmap(width, width, Bitmap.Config.ARGB_8888);
+            int top = (height - width)/2;
+            int bottom = top + width;
+            srcRect = new Rect(0, top, width, bottom);
+            dstRect = new Rect(0, 0, width, width);
+            r = width / 2;
+        }
+
+        Canvas canvas = new Canvas(output);
+
+        final int color = 0xff424242;
+        final Paint paint = new Paint();
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        canvas.drawCircle(r, r, r, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, srcRect, dstRect, paint);
+
+        bitmap.recycle();
+
+        return output;
+    }
+
+
+    public Bitmap getUserImg(String user)
+    {
+        Bitmap img=null;
+        for(int i=0;i<MainPageActivity.chats.size();i++)
+            if(MainPageActivity.chats.get(i).getChatName().toLowerCase().equals(user.toLowerCase()))
+                img = MainPageActivity.chats.get(i).getProfileImg();
+
+        Bitmap.createScaledBitmap(img,5,5,false);
+        return img;
     }
 
     public msgGroup getMsgGroup(String sender)

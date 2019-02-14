@@ -80,7 +80,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         //int index = getIntent().getExtras().getInt("Index");
 
 //        if(index!=-1)
-//            chat = (Chat) MainPageActivity.chats.get(index);
+//          chat = (Chat) MainPageActivity.chats.get(index);
 //
 //        if(chat!=null) {
 //            chatsDB.open();
