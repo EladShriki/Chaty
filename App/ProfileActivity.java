@@ -8,7 +8,12 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -39,10 +44,11 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class ProfileActivity extends AppCompatActivity implements View.OnClickListener {
 
+    static String status;
     Button btnEditImg,btnStatus,btnHome;
     TextView tvUsername;
     ImageView imgProfile;
-    EditText etStatus;
+    TextView tvStatus;
     Uri imgURI;
     private int GALLERY = 1, CAMERA = 2;
 
@@ -54,7 +60,7 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
         tvUsername = (TextView)findViewById(R.id.tvUsername);
         tvUsername.setText(MainActivity.loginSystem.getUsername());
 
-        etStatus = (EditText)findViewById(R.id.etStatus);
+        tvStatus = (TextView)findViewById(R.id.tvProStatus);
 
         imgProfile = (ImageView)findViewById(R.id.imgProfile);
 
@@ -71,6 +77,12 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
     }
 
     @Override
+    public void onBackPressed()
+    {
+        startActivity(new Intent(this,MainPageActivity.class));
+    }
+
+    @Override
     public void onClick(View view) {
         if(view==btnEditImg)
         {
@@ -78,10 +90,44 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
         }
         if (view==btnStatus)
         {
-            changeStatus();
+            getNewStatus(status);
+            tvStatus.setText(status);
         }
         if(btnHome==view)
             startActivity(new Intent(this,MainPageActivity.class));
+    }
+
+    public void getNewStatus(final String status)
+    {
+        final android.support.v7.app.AlertDialog.Builder mBuilder = new android.support.v7.app.AlertDialog.Builder(this);
+        View view1 = getLayoutInflater().inflate(R.layout.status_change,null);
+        final EditText etStatus = (EditText)view1.findViewById(R.id.etStatusCng);
+        etStatus.setText(status);
+        Button btnYes = (Button)view1.findViewById(R.id.btnYes);
+        Button btnNo = (Button)view1.findViewById(R.id.btnNo);
+
+        mBuilder.setView(view1);
+        final android.support.v7.app.AlertDialog dialog = mBuilder.create();
+
+        btnYes.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view)
+            {
+                ProfileActivity.status = etStatus.getText().toString();
+                changeStatus();
+                dialog.dismiss();
+
+            }
+        });
+        btnNo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ProfileActivity.status = status;
+                dialog.dismiss();
+            }
+        });
+
+        dialog.show();
     }
 
     @Override
@@ -296,7 +342,7 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
 
     public void changeStatus()
     {
-        String urlParameters = "username="+tvUsername.getText()+"&status="+etStatus.getText()+"&changeStatus=1&changeImage=0";
+        String urlParameters = "username="+tvUsername.getText()+"&status="+ProfileActivity.status+"&changeStatus=1&changeImage=0";
         try {
             String url = MainActivity.host+"/TestServer/Profile";
             HttpsURLConnection conn = CustomCAHttpProvider.getConnection(this,url);
@@ -321,7 +367,7 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
         } catch (Exception e) {
 
         }
-
+        tvStatus.setText(ProfileActivity.status);
         Toast.makeText(this, "Status Updated!", Toast.LENGTH_SHORT).show();
     }
 
@@ -354,8 +400,8 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
         } catch (Exception e) {
 
         }
-
-        etStatus.setText(status);
+        ProfileActivity.status = status;
+        tvStatus.setText(status);
 
         if(!image.equals("null")) {
             String[] byteValues = image.substring(1, image.length() - 1).split(",");
@@ -365,13 +411,13 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
                 imgByte[i] = Byte.parseByte(byteValues[i].trim());
 
             Bitmap img = BitmapFactory.decodeByteArray(imgByte, 0, imgByte.length);
-            imgProfile.setImageBitmap(Bitmap.createScaledBitmap(img,800,900,false));
+            imgProfile.setImageBitmap(img);
         }
         else
         {
             Bitmap img = BitmapFactory.decodeResource(this.getResources(),
                     R.drawable.user);
-            imgProfile.setImageBitmap(Bitmap.createScaledBitmap(img,800,900,false));
+            imgProfile.setImageBitmap(img);
         }
     }
 }

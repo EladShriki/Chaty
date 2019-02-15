@@ -35,8 +35,9 @@ public class MessageService extends Service {
     ChatsDB chatsDB = new ChatsDB(this);
     private NotificationManager mNotificationManager;
     private int notificationID;
-    private ArrayList<msgGroup> msgGroups;
+    static ArrayList<msgGroup> msgGroups;
     boolean alive = false;
+    boolean started = false;
 
     public MessageService() {
     }
@@ -56,8 +57,12 @@ public class MessageService extends Service {
         startServiceForeground();
 
         alive = true;
-        Thread thread = new Sleep();;
-        thread.start();
+
+        if(!started) {
+            Thread thread = new Sleep();
+            thread.start();
+        }
+        started=true;
 
         return Service.START_STICKY;
     }
@@ -65,6 +70,7 @@ public class MessageService extends Service {
     @Override
     public void onDestroy()
     {
+        started = false;
         alive = false;
         super.onDestroy();
     }
@@ -147,7 +153,6 @@ public class MessageService extends Service {
                 else {
                     createNotification(username);
                 }
-                sendOutBoradcast();
             }
             writer.close();
             reader.close();
@@ -159,60 +164,97 @@ public class MessageService extends Service {
         }
     }
 
-    public void sendOutBoradcast()
+    public void sendOutBoradcast(int id)
     {
         Intent i = new Intent();
+        i.putExtra("ID",id);
         i.setAction("com.example.eladshriki.chaty");
         i.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
         sendBroadcast(i);
     }
 
+    public int countMsgs()
+    {
+        int msgNum = 0;
+
+        for(int i=0;i<msgGroups.size();i++)
+            msgNum+=msgGroups.get(i).getMessages().size();
+
+        return msgNum;
+    }
+
     public void createSummary()
     {
-        Notification summaryNotification =
-                new NotificationCompat.Builder(this, CHANNEL_ID)
-                        .setContentTitle("Chaty")
-                        .setContentText("You have "+msgGroups.size()+" new Messages")
-                        .setSmallIcon(R.drawable.ic_launcher_background)
-                        .setStyle(new NotificationCompat.InboxStyle()
-                                .setBigContentTitle(msgGroups.size()+ " new messages")
-                                .setSummaryText("You have "+msgGroups.size()+" new Messages"))
-                        .setGroup("Messages")
-                        .setGroupSummary(true)
-                        .build();
-        NotificationManager notificationManager =
-                (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        if(countMsgs()!=0)
+        {
+            Notification summaryNotification =
+                    new NotificationCompat.Builder(this, CHANNEL_ID)
+                            .setContentTitle("Chaty")
+                            .setContentText(countMsgs() + " new messages from " + howManyChats() + " chats")
+                            .setSmallIcon(R.drawable.ic_launcher_background)
+                            .setStyle(new NotificationCompat.InboxStyle()
+                                    .setBigContentTitle(countMsgs() + " new messages from " + howManyChats() + " chats")
+                                    .setSummaryText(countMsgs() + " new messages from " + howManyChats() + " chats"))
+                            .setGroup("Messages")
+                            .setGroupSummary(true)
+                            .build();
+            NotificationManager notificationManager =
+                    (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
 
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            String channelId = CHANNEL_ID;
-            NotificationChannel channel = new NotificationChannel(channelId,
-                    "Messages",
-                    NotificationManager.IMPORTANCE_LOW);
-            notificationManager.createNotificationChannel(channel);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                String channelId = CHANNEL_ID;
+                NotificationChannel channel = new NotificationChannel(channelId,
+                        "Messages",
+                        NotificationManager.IMPORTANCE_LOW);
+                notificationManager.createNotificationChannel(channel);
+            }
+            if (msgGroups.size() != 0)
+                notificationManager.notify(0, summaryNotification);
         }
-        if(msgGroups.size()!=0)
-            notificationManager.notify(0, summaryNotification);
+        else {
+            NotificationManager notificationManager =
+                    (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.cancel(0);
+        }
+    }
+
+    public int howManyChats()
+    {
+        int cnt = 0;
+        for(int i =0;i<msgGroups.size();i++)
+            if(msgGroups.get(i).getMessages().size()!=0)
+                cnt++;
+        return cnt;
     }
 
     public void createNotification(String sender)
     {
         msgGroup msg = getMsgGroup(sender);
 
+        sendOutBoradcast(msg.getId());
+
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(this.getApplicationContext(), "Messeges");
 
         Intent ii = new Intent(this.getApplicationContext(), ChatActivity.class);
+
+        int id = msg.getId();
+
+        ii.putExtra("int_id",id);
         ii.putExtra("Username",sender);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, ii, 0);
+
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, ii, PendingIntent.FLAG_CANCEL_CURRENT);
 
         mBuilder.setAutoCancel(true);
         mBuilder.setContentIntent(pendingIntent);
         mBuilder.setSmallIcon(R.mipmap.ic_launcher_round);
-        mBuilder.setLargeIcon(getCircleBitmap(getUserImg(sender)));
+        mBuilder.setLargeIcon(msg.getImg());
         mBuilder.setContentTitle(msg.getName());
 
         NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
+        inboxStyle.addLine("\n");
 
         for(int i=0;i<msg.getMessages().size();i++)
             inboxStyle.addLine(msg.getMessages().get(i).getMsg());
@@ -274,7 +316,10 @@ public class MessageService extends Service {
         paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
         canvas.drawBitmap(bitmap, srcRect, dstRect, paint);
 
-        bitmap.recycle();
+        if (bitmap != null && !bitmap.isRecycled()) {
+            bitmap.recycle();
+            bitmap = null;
+        }
 
         return output;
     }
@@ -311,7 +356,7 @@ public class MessageService extends Service {
         }
         if(!added)
         {
-            msgGroups.add(new msgGroup(notificationID,msg.getSender(),msg));
+            msgGroups.add(new msgGroup(notificationID,msg.getSender(),msg,getCircleBitmap(getUserImg(msg.getSender()))));
             notificationID++;
         }
     }
@@ -321,16 +366,28 @@ public class MessageService extends Service {
         @Override
         public void run()
         {
+            try {
+                sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             while (alive)
             {
-                if(MainActivity.loginSystem.getUsername()!=null) {
-                    getMessage();
-                    createSummary();
+                try {
+                    if(MainActivity.loginSystem.getUsername()!=null) {
+                        getMessage();
+                        createSummary();
+                    }
                 }
+                catch (Exception e)
+                {
+                    Log.i("Chaty",e.getMessage());
+                }
+
                 try {
                     sleep(5000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Log.i("Chaty",e.getMessage());
                 }
             }
         }

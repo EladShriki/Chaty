@@ -57,6 +57,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     ListView lvMsg;
     MessageAdapter messageAdapter;
     LoginSystem loginSystem = MainActivity.loginSystem;
+    int notificationID;
     ChatsDB chatsDB;
     Uri imgURI;
     Boolean intentCamera = false;
@@ -73,10 +74,19 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         refreshListReciver = new RefreshListReciver();
 
+
         chatsDB = new ChatsDB(this);
 
+
         sender = loginSystem.getUsername();
-        reciver = getIntent().getExtras().getString("Username");
+
+        notificationID = getIntent().getIntExtra("int_id",-1);
+
+        reciver = getIntent().getStringExtra("Username");
+
+
+        cancelNotifications(notificationID);
+
         //int index = getIntent().getExtras().getInt("Index");
 
 //        if(index!=-1)
@@ -108,6 +118,15 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         lvMsg.setSelection(messages.size());
 
         refreshList();
+    }
+
+    public void cancelNotifications(int id)
+    {
+        NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancel(id);
+        for(int i=0;i<MessageService.msgGroups.size();i++)
+            if(MessageService.msgGroups.get(i).getId()==id)
+                MessageService.msgGroups.get(i).deleteAllMsgs();
     }
 
     @Override
@@ -453,15 +472,16 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         public void onReceive(Context context, Intent intent)
         {
-            try {
-                refreshList();
-                NotificationManager mNotificationManager =
-                        (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                mNotificationManager.cancel(0);
-            }
-            catch (Exception e)
-            {
-                Log.i("Chaty",e.getMessage());
+            int id = intent.getIntExtra("ID",-1);
+            if(id==notificationID) {
+                try {
+                    refreshList();
+                    NotificationManager mNotificationManager =
+                            (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                    mNotificationManager.cancel(intent.getIntExtra("ID", -1));
+                } catch (Exception e) {
+                    Log.i("Chaty", e.getMessage());
+                }
             }
         }
     }

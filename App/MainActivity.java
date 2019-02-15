@@ -93,17 +93,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             etHost.setText(host);
             Button btnHost = (Button)view1.findViewById(R.id.btnDialog);
 
+            mBuilder.setView(view1);
+            final AlertDialog dialog = mBuilder.create();
+
             btnHost.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view)
                 {
                     changeHostConfig(etHost.getText().toString());
                     Toast.makeText(MainActivity.this, "Host Changed Successfully!", Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
                 }
             });
 
-            mBuilder.setView(view1);
-            AlertDialog dialog = mBuilder.create();
             dialog.show();
         }
         if(btnReg==view)
