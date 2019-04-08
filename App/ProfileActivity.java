@@ -22,10 +22,12 @@ import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,7 +47,7 @@ import javax.net.ssl.HttpsURLConnection;
 public class ProfileActivity extends AppCompatActivity implements View.OnClickListener {
 
     static String status;
-    Button btnEditImg,btnStatus,btnHome;
+    ImageButton btnEditImg,btnStatus;
     TextView tvUsername;
     ImageView imgProfile;
     TextView tvStatus;
@@ -64,16 +66,31 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
 
         imgProfile = (ImageView)findViewById(R.id.imgProfile);
 
-        btnEditImg = (Button)findViewById(R.id.btnEditImg);
+        btnEditImg = (ImageButton) findViewById(R.id.btnEditImg);
         btnEditImg.setOnClickListener(this);
 
-        btnStatus = (Button)findViewById(R.id.btnStatus);
+        btnStatus = (ImageButton)findViewById(R.id.btnStatus);
         btnStatus.setOnClickListener(this);
 
-        btnHome = (Button)findViewById(R.id.btnHome);
-        btnHome.setOnClickListener(this);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.profileToolBar);
+        setSupportActionBar(toolbar);
 
-        getProfile();
+        toolbar.setNavigationIcon(getResources().getDrawable(R.drawable.back));
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onBackPressed();
+            }
+        });
+
+        new Thread(){
+            @Override
+            public void run() {
+                getProfile();
+            }
+        }.start();
+
+        getSavedImgProfile();
     }
 
     @Override
@@ -93,8 +110,24 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
             getNewStatus(status);
             tvStatus.setText(status);
         }
-        if(btnHome==view)
-            startActivity(new Intent(this,MainPageActivity.class));
+    }
+
+    public void getSavedImgProfile()
+    {
+        String root = Environment.getExternalStorageDirectory().toString();
+        File myDir = new File(root + "/Chaty/profile_Img");
+        myDir.mkdirs();
+        String fname = MainActivity.loginSystem.getUsername() + ".jpg";
+        File file = new File(myDir, fname);
+        if (file.exists()) {
+            Bitmap img = BitmapFactory.decodeFile(file.getAbsolutePath());
+            imgProfile.setImageBitmap(getResizedBitmap(img,1200));
+        }
+        else {
+            Bitmap img = BitmapFactory.decodeResource(this.getResources(),
+                    R.drawable.user);
+            imgProfile.setImageBitmap(getResizedBitmap(img, 1200));
+        }
     }
 
     public void getNewStatus(final String status)
@@ -173,7 +206,7 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
 
     public void sendImg(byte[] bytes)
     {
-        String urlParameters = "username="+MainActivity.loginSystem.getUsername()+"&changeImage=1&changeStatus=0&img="+ Arrays.toString(bytes);;
+        String urlParameters = "username="+MainActivity.loginSystem.getUsername()+"&changeImage=1&changeStatus=0&imgDate="+new Date().getTime()+"&img="+ Arrays.toString(bytes);
         try {
             String url = MainActivity.host+"/TestServer/Profile";
             HttpsURLConnection conn = CustomCAHttpProvider.getConnection(this,url);
@@ -200,7 +233,22 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
             Log.e("Chaty",e.getMessage());
         }
         Bitmap img = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-        imgProfile.setImageBitmap(Bitmap.createScaledBitmap(img,800,900,false));
+        imgProfile.setImageBitmap(Bitmap.createScaledBitmap(getResizedBitmap(img,300),800,900,false));
+    }
+
+    public Bitmap getResizedBitmap(Bitmap image, int maxSize) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        float bitmapRatio = (float)width / (float) height;
+        if (bitmapRatio > 0) {
+            width = maxSize;
+            height = (int) (width / bitmapRatio);
+        } else {
+            height = maxSize;
+            width = (int) (height * bitmapRatio);
+        }
+        return Bitmap.createScaledBitmap(image, width, height, true);
     }
 
     public String saveImage(Bitmap myBitmap)
@@ -374,7 +422,7 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
     public void getProfile()
     {
         String status=null,image=null;
-        String urlParameters = "username="+tvUsername.getText()+"&changeStatus=0&changeImage=0";
+        String urlParameters = "username="+tvUsername.getText()+"&changeStatus=0&changeImage=0&dateImg="+new Date().getTime();
         try {
             String url = MainActivity.host+"/TestServer/Profile";
             HttpsURLConnection conn = CustomCAHttpProvider.getConnection(this,url);
@@ -392,6 +440,7 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
             if ((line = reader.readLine()) != null)
             {
                 status = line.substring(0,line.indexOf(','));
+                line = line.substring(line.indexOf(',')+1);
                 image = line.substring(line.indexOf(',')+1);
             }
 
@@ -401,7 +450,12 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
 
         }
         ProfileActivity.status = status;
-        tvStatus.setText(status);
+        tvStatus.post(new Runnable() {
+            @Override
+            public void run() {
+                tvStatus.setText(ProfileActivity.status);
+            }
+        });
 
         if(!image.equals("null")) {
             String[] byteValues = image.substring(1, image.length() - 1).split(",");
@@ -410,14 +464,47 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
             for (int i = 0, len = imgByte.length; i < len; i++)
                 imgByte[i] = Byte.parseByte(byteValues[i].trim());
 
-            Bitmap img = BitmapFactory.decodeByteArray(imgByte, 0, imgByte.length);
-            imgProfile.setImageBitmap(img);
+            final Bitmap img = BitmapFactory.decodeByteArray(imgByte, 0, imgByte.length);
+
+            saveProfileImg(img);
+
+            //imgProfile.setImageBitmap(Bitmap.createScaledBitmap(getResizedBitmap(img,400),1300,1200,true));
+            imgProfile.post(new Runnable() {
+                @Override
+                public void run() {
+                    imgProfile.setImageBitmap(getResizedBitmap(img,1200));
+                }
+            });
         }
         else
         {
-            Bitmap img = BitmapFactory.decodeResource(this.getResources(),
+            final Bitmap img = BitmapFactory.decodeResource(this.getResources(),
                     R.drawable.user);
-            imgProfile.setImageBitmap(img);
+            imgProfile.post(new Runnable() {
+                @Override
+                public void run() {
+                    imgProfile.setImageBitmap(getResizedBitmap(img,1200));
+                }
+            });
+        }
+    }
+
+    public void saveProfileImg(Bitmap img)
+    {
+        String root = Environment.getExternalStorageDirectory().toString();
+        File myDir = new File(root + "/Chaty/profile_Img");
+        myDir.mkdirs();
+        String fname = MainActivity.loginSystem.getUsername() +".jpg";
+        File file = new File (myDir, fname);
+        if (file.exists ()) file.delete ();
+        try {
+            FileOutputStream out = new FileOutputStream(file);
+            img.compress(Bitmap.CompressFormat.JPEG, 90, out);
+            out.flush();
+            out.close();
+
+        } catch (Exception e) {
+            Log.e("Error",e.getMessage());
         }
     }
 }

@@ -117,6 +117,8 @@ public class MessageService extends Service {
 
             while ((line = reader.readLine()) != null) {
 
+                int id = Integer.parseInt(line.substring(0,line.indexOf(",")));
+                line = line.substring(line.indexOf(",") + 1);
                 username = line.substring(0, line.indexOf(","));
                 line = line.substring(line.indexOf(",") + 1);
                 msg = line.substring(0, line.indexOf(","));
@@ -133,7 +135,7 @@ public class MessageService extends Service {
                         imgByte[i] = Byte.parseByte(byteValues[i].trim());
 
 
-                    Message temp = new Message(username, imgByte, username, MainActivity.loginSystem.getUsername(), date);
+                    Message temp = new Message(id,username, imgByte, username, MainActivity.loginSystem.getUsername(), date);
                     chatsDB.open();
                     chatsDB.createMessage(temp);
                     chatsDB.close();
@@ -141,7 +143,7 @@ public class MessageService extends Service {
                 }
                 else
                 {
-                    Message temp = new Message(username, msg, username, MainActivity.loginSystem.getUsername(), date);
+                    Message temp = new Message(id,username, msg, username, MainActivity.loginSystem.getUsername(), date);
                     chatsDB.open();
                     chatsDB.createMessage(temp);
                     chatsDB.close();
@@ -187,11 +189,14 @@ public class MessageService extends Service {
     {
         if(countMsgs()!=0)
         {
+            Intent intent = new Intent(this,MainPageActivity.class);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this,0,intent,0);
             Notification summaryNotification =
                     new NotificationCompat.Builder(this, CHANNEL_ID)
                             .setContentTitle("Chaty")
                             .setContentText(countMsgs() + " new messages from " + howManyChats() + " chats")
                             .setSmallIcon(R.drawable.ic_launcher_background)
+                            .setContentIntent(pendingIntent)
                             .setStyle(new NotificationCompat.InboxStyle()
                                     .setBigContentTitle(countMsgs() + " new messages from " + howManyChats() + " chats")
                                     .setSummaryText(countMsgs() + " new messages from " + howManyChats() + " chats"))

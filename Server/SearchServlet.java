@@ -22,30 +22,15 @@ public class SearchServlet extends HttpServlet
 		try {
 			Class.forName("com.mysql.cj.jdbc.Driver");
 			Connection connection = DriverManager.getConnection(url, dbusername, dbpassword);
-			String sql = "SELECT username,email,status,image from chaty.users where username= ?";
+			//String sql = "SELECT username,email,status,image from chaty.users where username LIKE ?";
+			String sql = "SELECT username,email,status,image from chaty.users where not username=?";
 			PreparedStatement stat = connection.prepareStatement(sql);
 			stat.setString(1, para);
 			ResultSet rs = stat.executeQuery();
-			if(rs.next())
+			while(rs.next())
 			{	
 				res.getOutputStream().println(rs.getString(1)+","+rs.getString(2)+","+rs.getString(3)+","+rs.getString(4));
 				System.out.println("Username Found!");
-			}
-			else
-			{
-				System.out.println("Username not Found!");
-				sql = "SELECT username,email,status,image from chaty.users where email= ?";
-				stat.setString(1, para);
-				rs = stat.executeQuery();
-				if(rs.next())
-				{
-					res.getOutputStream().println(rs.getString(1)+","+rs.getString(2)+","+rs.getString(3)+","+rs.getString(4));
-					System.out.println("Username Found!");
-				}
-				else
-				{
-					System.out.println("Email not Found!");
-				}
 			}
 		}
 		catch (ClassNotFoundException e1)

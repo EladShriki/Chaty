@@ -7,6 +7,10 @@
     android:orientation="vertical"
     tools:context=".RegisterActivity">
 
+    <include
+        android:id="@+id/registerToolBar"
+        layout="@layout/toolbar"></include>
+
     <TextView
         android:id="@+id/textView2"
         android:layout_width="match_parent"
@@ -134,18 +138,4 @@
         android:shadowRadius="5"
         android:text="Register" />
 
-    <Button
-        android:id="@+id/btnRLogin"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:layout_gravity="center"
-        android:background="@drawable/buttonshape"
-        android:textColor="#ffffff"
-        android:textSize="20dp"
-        android:shadowColor="#a9a9a9"
-        android:shadowDx="0"
-        android:shadowDy="0"
-        android:shadowRadius="5"
-        android:text="Login Page" />
 </LinearLayout>

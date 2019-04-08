@@ -41,13 +41,4 @@ public class msgGroup
         return messages;
     }
 
-    public String getAllmsgs()
-    {
-        String s = "";
-        for(int i=0;i<this.messages.size();i++)
-        {
-            s+=messages.get(i).getMsg()+" \n";
-        }
-        return s.substring(0,s.length()-2);
-    }
 }

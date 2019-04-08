@@ -7,7 +7,11 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ChatsDB extends SQLiteOpenHelper
 {
@@ -25,7 +29,7 @@ public class ChatsDB extends SQLiteOpenHelper
     public static final String COLUMN_IMG="img";
 
     private static final String CREATE_TABLE_MSG="CREATE TABLE IF NOT EXISTS " +
-            TABLE_MSG + "(" + COLUMN_ID +  " INTEGER PRIMARY KEY AUTOINCREMENT," + COLUMN_SENDER + " VARCHAR," + COLUMN_TEXT + " VARCHAR," + COLUMN_CHAT_NAME + " VARCHAR,"+ COLUMN_USERNAME +" VARCHAR,"+
+            TABLE_MSG + "(" + COLUMN_ID +  " INTEGER PRIMARY KEY," + COLUMN_SENDER + " VARCHAR," + COLUMN_TEXT + " VARCHAR," + COLUMN_CHAT_NAME + " VARCHAR,"+ COLUMN_USERNAME +" VARCHAR,"+
             COLUMN_IMG +" BLOB,"+ COLUMN_DATE +" VARCHAR" + ");";
 
     String []allColumns={ChatsDB.COLUMN_ID, ChatsDB.COLUMN_USERNAME,ChatsDB.COLUMN_TEXT,ChatsDB.COLUMN_CHAT_NAME,ChatsDB.COLUMN_SENDER,ChatsDB.COLUMN_DATE,ChatsDB.COLUMN_IMG};
@@ -56,6 +60,7 @@ public class ChatsDB extends SQLiteOpenHelper
     public Message createMessage(Message temp)
     {
         ContentValues values=new ContentValues();
+        values.put(ChatsDB.COLUMN_ID,temp.getId());
         values.put(ChatsDB.COLUMN_USERNAME, temp.getUsername());
         values.put(ChatsDB.COLUMN_TEXT, temp.getText());
         values.put(ChatsDB.COLUMN_CHAT_NAME, temp.getChatName());
@@ -82,21 +87,25 @@ public class ChatsDB extends SQLiteOpenHelper
     public ArrayList<Message> getAllMessagesByName(String name) {
 
         ArrayList<Message> l = new ArrayList<Message>();
-        String selection = COLUMN_CHAT_NAME +" =?";
+        String colums = Arrays.toString(allColumns);
+
+        String sql = "SELECT "+colums.substring(1,colums.length()-1)+" FROM "+TABLE_MSG+" WHERE LOWER("+COLUMN_CHAT_NAME+") = ?";
+
         String[] args = {name};
-        Cursor cursor=database.query(ChatsDB.TABLE_MSG, allColumns, selection, args, null, null, null);
+        Cursor cursor= database.rawQuery(sql,args);
 
         if(cursor.getCount()>0)
         {
             while(cursor.moveToNext())
             {
+                int id = cursor.getInt(cursor.getColumnIndex(COLUMN_ID));
                 String username=cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_USERNAME));
                 String text =cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_TEXT));
                 String chatName = cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_CHAT_NAME));
                 String sender = cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_SENDER));
                 String date = cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_DATE));
                 byte[] img = cursor.getBlob(cursor.getColumnIndex(ChatsDB.COLUMN_IMG));
-                Message c=new Message(chatName,username,sender,text,date,img);
+                Message c=new Message(id,chatName,username,sender,text,date,img);
                 l.add(c);
             }
         }
@@ -112,17 +121,59 @@ public class ChatsDB extends SQLiteOpenHelper
         {
             while(cursor.moveToNext())
             {
+                int id = cursor.getInt(cursor.getColumnIndex(COLUMN_ID));
                 String username=cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_USERNAME));
                 String text =cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_TEXT));
                 String chatName = cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_CHAT_NAME));
                 String sender = cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_SENDER));
                 String date = cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_DATE));
                 byte[] img = cursor.getBlob(cursor.getColumnIndex(ChatsDB.COLUMN_IMG));
-                Message c=new Message(chatName,username,sender,text,date,img);
+                Message c=new Message(id,chatName,username,sender,text,date,img);
                 l.add(c);
             }
         }
         return l;
+    }
+
+    public ArrayList<String> getAllChats(String username)
+    {
+        ArrayList<String> chats = new ArrayList<>();
+        String[] args = {username};
+
+        String sql = "SELECT  DISTINCT "+COLUMN_CHAT_NAME+" FROM "+ TABLE_MSG +" WHERE "+COLUMN_USERNAME + " = ?";
+        Cursor cursor = database.rawQuery(sql,args);
+
+        if(cursor.getCount()>0)
+        {
+            while(cursor.moveToNext())
+            {
+                String chatName = cursor.getString(cursor.getColumnIndex(COLUMN_CHAT_NAME));
+                chats.add(chatName.toLowerCase());
+            }
+        }
+        Set<String> set = new HashSet<>(chats);
+        chats.clear();
+        chats.addAll(set);
+        return chats;
+    }
+
+    public ArrayList<Integer> getAllIdByName(String username)
+    {
+        ArrayList<Integer> list = new ArrayList<Integer>();
+        String selection = COLUMN_USERNAME +" =?";
+        String[] args = {username};
+        String[] column = {COLUMN_ID};
+        Cursor cursor=database.query(ChatsDB.TABLE_MSG, column, selection, args, null, null, null);
+
+        if(cursor.getCount()>0)
+        {
+            while(cursor.moveToNext())
+            {
+                int id = cursor.getInt(cursor.getColumnIndex(COLUMN_ID));
+                list.add(id);
+            }
+        }
+        return list;
     }
 
     public boolean isMsgExsist(Message message)
@@ -132,13 +183,14 @@ public class ChatsDB extends SQLiteOpenHelper
         {
             while(cursor.moveToNext())
             {
+                int id = cursor.getInt(cursor.getColumnIndex(COLUMN_ID));
                 String username=cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_USERNAME));
                 String text =cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_TEXT));
                 String chatName = cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_CHAT_NAME));
                 String sender = cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_SENDER));
                 String date = cursor.getString(cursor.getColumnIndex(ChatsDB.COLUMN_DATE));
                 byte[] img = cursor.getBlob(cursor.getColumnIndex(ChatsDB.COLUMN_IMG));
-                Message temp=new Message(chatName,username,sender,text,date,img);
+                Message temp=new Message(id,chatName,username,sender,text,date,img);
                 if(temp.toString().equals(message.toString()))
                     return true;
             }

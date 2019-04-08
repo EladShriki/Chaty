@@ -19,12 +19,13 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Properties;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    static String host = "https://10.100.102.4:8443";
+    static String host = "https://10.100.102.3:8443";
     static boolean checkLogin = true;
 
     EditText etUsername, etPassword;
@@ -143,7 +144,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if(!checkLogin)
         {
             loginSystem = new LoginSystem(this, host, username, password);
-            startActivity(new Intent(this,MainPageActivity.class));
+            Intent i = new Intent(this,MainPageActivity.class) ;
+            startActivity(i);
         }
     }
 
@@ -191,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         if(!fileFound)
         {
-            properties.setProperty("host","https://10.100.102.4:8443");
+            properties.setProperty("host",host);
             file.createNewFile();
             saveProperties(properties,file);
         }

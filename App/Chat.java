@@ -26,4 +26,9 @@ public class Chat
     public Bitmap getProfileImg() {
         return profileImg;
     }
+
+    public void setProfileImg(Bitmap profileImg) {
+        this.profileImg = profileImg;
+    }
+
 }

@@ -6,8 +6,21 @@
     tools:context=".activity.MainActivity">
 
     <item
-        android:id="@+id/action_Search"
-        android:title="Search"
+        android:id="@+id/action_search"
+        android:icon="@android:drawable/ic_menu_search"
+        app:showAsAction="always|collapseActionView"
+        app:actionViewClass="android.support.v7.widget.SearchView"
+        android:title="Search"/>
+
+    <item
+        android:id="@+id/action_Chats"
+        android:title="Chats"
+        app:showAsAction="never"
+        />
+
+    <item
+        android:id="@+id/action_Findpeople"
+        android:title="Find people"
         app:showAsAction="never"/>
 
     <item

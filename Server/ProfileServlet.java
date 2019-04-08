@@ -23,18 +23,28 @@ public class ProfileServlet extends HttpServlet
 		
 		if(changeImage==0 && changeStatus==0)
 		{
+			long imgdate = Long.parseLong(req.getParameter("dateImg"));
 			try {
 				Class.forName("com.mysql.cj.jdbc.Driver");
 				Connection connection = DriverManager.getConnection(url, dbusername, dbpassword);
-				String sql = "SELECT status,image from chaty.users where username= ?";
+				String sql = "SELECT imgDate from chaty.users where username= ?";
 				PreparedStatement stat = connection.prepareStatement(sql);
 				stat.setString(1, username);
 				ResultSet rs = stat.executeQuery();
 				if(rs.next())
-				{
-					res.getOutputStream().println(rs.getString(1)+","+rs.getString(2));
-					System.out.println("Profile Sent!");
-				}
+					if(rs.getString(1)!=null)
+						if(Long.parseLong(rs.getString(1))!=imgdate)
+						{
+							sql = "SELECT status,imgDate,image from chaty.users where username= ?";
+							stat = connection.prepareStatement(sql);
+							stat.setString(1, username);
+							rs = stat.executeQuery();
+							if(rs.next())
+							{
+								res.getOutputStream().println(rs.getString(1)+","+rs.getString(2)+","+rs.getString(3));
+								System.out.println("Profile Sent!");
+							}
+						}	
 			}
 			catch (ClassNotFoundException e1)
 			{
@@ -71,13 +81,15 @@ public class ProfileServlet extends HttpServlet
 				if(changeImage==1)
 				{
 					String img = req.getParameter("img");
+					long date = Long.parseLong(req.getParameter("imgDate"));
 					try {
 						Class.forName("com.mysql.cj.jdbc.Driver");
 						Connection connection = DriverManager.getConnection(url, dbusername, dbpassword);
-						String sql = "UPDATE chaty.users SET Image = ? WHERE username=?";
+						String sql = "UPDATE chaty.users SET Image = ?, imgDate= ? WHERE username=?";
 						PreparedStatement stat = connection.prepareStatement(sql);
 						stat.setString(1, img);
-						stat.setString(2, username);
+						stat.setLong(2, date);
+						stat.setString(3, username);
 						stat.executeUpdate();
 					}
 					catch (ClassNotFoundException e1)

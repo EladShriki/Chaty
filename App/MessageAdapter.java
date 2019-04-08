@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class MessageAdapter extends ArrayAdapter<Message>
 {
     Context context;
     List<Message> objects;
+    final int imgMaxSize = 550;
 
     public MessageAdapter(Context context, int resource, List<Message> objects)
     {
@@ -29,33 +31,63 @@ public class MessageAdapter extends ArrayAdapter<Message>
 
     @NonNull
     @Override
-    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent)
+    {
 
         Message temp = objects.get(position);
 
         if(temp.getImgBytes()!=null)
         {
-            byte[] imgBytes = temp.getImgBytes();
-            Bitmap img = BitmapFactory.decodeByteArray(imgBytes,0,imgBytes.length);
-
+            Bitmap img = temp.getBitmap();
 
             LayoutInflater layoutInflater = ((Activity)context).getLayoutInflater();
             View view = layoutInflater.inflate(R.layout.img_row,parent,false);
-            TextView tvImgSend = (TextView)view.findViewById(R.id.tvImgSend);
-            ImageView imgMsg = (ImageView)view.findViewById(R.id.imgMsg);
-            imgMsg.setImageBitmap(Bitmap.createScaledBitmap(img,600,900,false));
-            tvImgSend.setText(temp.getSender());
+
+            if(temp.getSender().equals(MainActivity.loginSystem.getUsername()))
+            {
+                ImageView imgMsgL = (ImageView) view.findViewById(R.id.imgMsgL);
+                view.findViewById(R.id.imgLayoutR).setAlpha(0);
+                imgMsgL.setImageBitmap(getResizedBitmap(img,imgMaxSize));
+            }
+            else
+            {
+                ImageView imgMsgR = (ImageView)view.findViewById(R.id.imgMsgR);
+                view.findViewById(R.id.imgLayoutL).setAlpha(0);
+                imgMsgR.setImageBitmap(getResizedBitmap(img,imgMaxSize));
+            }
             return view;
         }
 
         LayoutInflater layoutInflater = ((Activity)context).getLayoutInflater();
         View view = layoutInflater.inflate(R.layout.chat_row,parent,false);
-        TextView tvSender = (TextView)view.findViewById(R.id.tvSender);
-        TextView tvMsg = (TextView)view.findViewById(R.id.tvMsg);
+        TextView tvMsgL = (TextView)view.findViewById(R.id.tvMsgL);
+        TextView tvMsgR = (TextView)view.findViewById(R.id.tvMsgR);
 
 
-        tvSender.setText(temp.getSender());
-        tvMsg.setText(temp.getText());
+        if(temp.getSender().equals(MainActivity.loginSystem.getUsername())) {
+            tvMsgL.setText(temp.getText());
+            tvMsgR.setAlpha(0);
+        }
+        else
+        {
+            tvMsgR.setText(temp.getText());
+            tvMsgL.setAlpha(0);
+        }
         return view;
+    }
+
+    public Bitmap getResizedBitmap(Bitmap image, int maxSize) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        float bitmapRatio = (float)width / (float) height;
+        if (bitmapRatio > 0) {
+            width = maxSize;
+            height = (int) (width / bitmapRatio);
+        } else {
+            height = maxSize;
+            width = (int) (height * bitmapRatio);
+        }
+        return Bitmap.createScaledBitmap(image, width, height, true);
     }
 }

@@ -11,9 +11,17 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,10 +30,13 @@ import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -48,8 +59,9 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     RefreshListReciver refreshListReciver = null;
     Boolean myReceiverIsRegistered = false;
 
+    int pos;
     EditText etChat;
-    Button btnSend, btnPic;
+    ImageButton btnSend, btnPic;
     ArrayList<Message> messages;
     String sender;
     String reciver;
@@ -61,9 +73,6 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     ChatsDB chatsDB;
     Uri imgURI;
     Boolean intentCamera = false;
-    Chat chat;
-
-    private static final String IMAGE_DIRECTORY = "/Chaty";
     private int GALLERY = 1, CAMERA = 2;
 
 
@@ -74,7 +83,6 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         refreshListReciver = new RefreshListReciver();
 
-
         chatsDB = new ChatsDB(this);
 
 
@@ -84,6 +92,24 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         reciver = getIntent().getStringExtra("Username");
 
+        String type = null;
+        try {
+            type = getIntent().getStringExtra("type");
+        }
+        catch (Exception e)
+        {
+
+        }
+
+        pos = getIntent().getIntExtra("pos",-1);
+        if(pos==-1)
+        {
+            for(int i=0;i<MainPageActivity.chats.size();i++)
+                if(MainPageActivity.chats.get(i).getChatName().equals(reciver)) {
+                    pos = i;
+                    break;
+                }
+        }
 
         cancelNotifications(notificationID);
 
@@ -108,16 +134,100 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         etChat = (EditText)findViewById(R.id.etChat);
 
-        btnSend = (Button)findViewById(R.id.btnSend);
-        btnPic = (Button)findViewById(R.id.btnPic);
+        btnSend = (ImageButton)findViewById(R.id.btnSend);
+        btnPic = (ImageButton) findViewById(R.id.btnPic);
         btnPic.setOnClickListener(this);
         btnSend.setOnClickListener(this);
 
         lvMsg = (ListView) findViewById(R.id.lvMsg);
+        lvMsg.setEmptyView(findViewById(R.id.tvLoadMsg));
         lvMsg.setAdapter(messageAdapter);
         lvMsg.setSelection(messages.size());
 
-        refreshList();
+        new Thread()
+        {
+            @Override
+            public void run() {
+                refreshList();
+            }
+        }.start();
+
+        Toolbar toolbar = (Toolbar) findViewById(R.id.ChatToolBar);
+        setSupportActionBar(toolbar);
+
+        Bitmap img=null;
+
+        if(type!=null) {
+            if (type.equals("user")) {
+                img = Bitmap.createScaledBitmap(((Chat) MainPageActivity.userAdapter.getItem(pos)).getProfileImg(), 125, 125, false);
+                img = getCircleBitmap(img);
+            }
+        }
+        else {
+            ProfileImgService profileImgService = new ProfileImgService();
+            profileImgService.getProfileImg(reciver, pos);
+
+            img = Bitmap.createScaledBitmap(MainPageActivity.chats.get(pos).getProfileImg(), 125, 125, false);
+            img = getCircleBitmap(img);
+        }
+        if(img!=null) {
+            Drawable profile = new BitmapDrawable(getResources(), img);
+
+            getSupportActionBar().setLogo(profile);
+        }
+        getSupportActionBar().setTitle("  "+reciver);
+        toolbar.setNavigationIcon(getResources().getDrawable(R.drawable.back));
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onBackPressed();
+            }
+        });
+
+    }
+
+    private Bitmap getCircleBitmap(Bitmap bitmap) {
+
+        Bitmap output;
+        Rect srcRect, dstRect;
+        float r;
+        final int width = bitmap.getWidth();
+        final int height = bitmap.getHeight();
+
+        if (width > height){
+            output = Bitmap.createBitmap(height, height, Bitmap.Config.ARGB_8888);
+            int left = (width - height) / 2;
+            int right = left + height;
+            srcRect = new Rect(left, 0, right, height);
+            dstRect = new Rect(0, 0, height, height);
+            r = height / 2;
+        }else{
+            output = Bitmap.createBitmap(width, width, Bitmap.Config.ARGB_8888);
+            int top = (height - width)/2;
+            int bottom = top + width;
+            srcRect = new Rect(0, top, width, bottom);
+            dstRect = new Rect(0, 0, width, width);
+            r = width / 2;
+        }
+
+        Canvas canvas = new Canvas(output);
+
+        final int color = 0xff424242;
+        final Paint paint = new Paint();
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        canvas.drawCircle(r, r, r, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, srcRect, dstRect, paint);
+
+        if (bitmap != null && !bitmap.isRecycled()) {
+            bitmap.recycle();
+            bitmap = null;
+        }
+
+        return output;
     }
 
     public void cancelNotifications(int id)
@@ -227,32 +337,58 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
 
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null)
-        {
-            intentCamera = true;
-            File photo = null;
-            try {
-                photo = this.createTemporaryFile("pic",".jpg");
-                photo.delete();
-            } catch (Exception e) {
-                e.printStackTrace();
+        try {
+            if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                intentCamera = true;
+                File photo = null;
+                try {
+                    photo = this.createTemporaryFile("pic", ".jpg");
+                    photo.delete();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                imgURI = Uri.fromFile(photo);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, imgURI);
+                startActivityForResult(takePictureIntent, CAMERA);
             }
-            imgURI = Uri.fromFile(photo);
-            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,imgURI);
-            startActivityForResult(takePictureIntent, CAMERA);
+        }
+        catch (Exception e)
+        {
+            Log.e("Error",e.getMessage());
         }
     }
 
     private File createTemporaryFile(String part, String ext) throws Exception
     {
-        File tempDir= Environment.getExternalStorageDirectory();
-        tempDir=new File(tempDir.getAbsolutePath()+"/.temp/");
-        if(!tempDir.exists())
-        {
-            tempDir.mkdirs();
+        if(isStoragePermissionGranted()) {
+            File tempDir = Environment.getExternalStorageDirectory();
+            tempDir = new File(tempDir.getAbsolutePath() + "/.temp/");
+            if (!tempDir.exists()) {
+                tempDir.mkdirs();
+            }
+            return File.createTempFile(part, ext, tempDir);
         }
-        return File.createTempFile(part, ext, tempDir);
+        return null;
     }
+
+//    public  boolean isStoragePermissionGranted() {
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+//                    == PackageManager.PERMISSION_GRANTED) {
+//                Log.e("Error","Permission is granted");
+//                return true;
+//            } else {
+//
+//                Log.e("Error","Permission is revoked");
+//                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+//                return false;
+//            }
+//        }
+//        else { //permission is automatically granted on sdk<23 upon installation
+//            Log.e("Error","Permission is granted");
+//            return true;
+//        }
+//    }
 
     public Bitmap grabImage()
     {
@@ -262,7 +398,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         try
         {
             bitmap = android.provider.MediaStore.Images.Media.getBitmap(cr, imgURI);
-            return bitmap;
+            return rotateImageIfRequired(this,bitmap,imgURI);
         }
         catch (Exception e)
         {
@@ -270,6 +406,41 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
             Log.d("ERROR", "Failed to load", e);
         }
         return null;
+    }
+
+    private Bitmap rotateImageIfRequired(Context context,Bitmap img, Uri selectedImage) {
+
+        // Detect rotation
+        int rotation = getRotation(context, selectedImage);
+        if (rotation != 0) {
+            Matrix matrix = new Matrix();
+            matrix.postRotate(rotation);
+            Bitmap rotatedImg = Bitmap.createBitmap(img, 0, 0, img.getWidth(), img.getHeight(), matrix, true);
+            img.recycle();
+            return rotatedImg;
+        }
+        else{
+            return img;
+        }
+    }
+
+    private int getRotation(Context context,Uri selectedImage) {
+
+        int rotation = 0;
+        ContentResolver content = context.getContentResolver();
+
+        Cursor mediaCursor = content.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                new String[] { "orientation", "date_added" },
+                null, null, "date_added desc");
+
+        if (mediaCursor != null && mediaCursor.getCount() != 0) {
+            while(mediaCursor.moveToNext()){
+                rotation = mediaCursor.getInt(0);
+                break;
+            }
+        }
+        mediaCursor.close();
+        return rotation;
     }
 
     @Override
@@ -390,15 +561,20 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
             writer.flush();
 
             String line;
+            int id=-1;
             BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
             if ((line = reader.readLine()) != null) {
-
+                id = Integer.parseInt(line);
             }
 
             writer.close();
             reader.close();
 
+            if(id!=-1)
+                temp.setId(id);
+            else
+                Toast.makeText(context, "BUGG!!", Toast.LENGTH_SHORT).show();
             messages.add(temp);
             chatsDB.open();
             chatsDB.createMessage(temp);
@@ -437,15 +613,20 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
             writer.flush();
 
             String line;
+            int id = -1;
             BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
             if ((line = reader.readLine()) != null) {
-
+                id = Integer.parseInt(line);
             }
 
             writer.close();
             reader.close();
 
+            if(id!=-1)
+                temp.setId(id);
+            else
+                Toast.makeText(context, "BUGG!!", Toast.LENGTH_SHORT).show();
             messages.add(temp);
             chatsDB.open();
             chatsDB.createMessage(temp);

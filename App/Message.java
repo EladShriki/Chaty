@@ -1,14 +1,16 @@
 package com.example.eladshriki.chaty;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import java.util.Arrays;
 import java.util.Date;
 
-public class Message implements Parcelable
+public class Message
 {
-
+    private int id;
     private String chatName;
     private String username;
     private String sender;
@@ -16,8 +18,10 @@ public class Message implements Parcelable
     private String  date;
     private String img;
     private byte[] imgBytes;
+    private Bitmap bitmap;
 
-    public Message(String chatName, String username, String sender, String text, String date, byte[] img) {
+    public Message(int id,String chatName, String username, String sender, String text, String date, byte[] img) {
+        this.id = id;
         this.chatName = chatName;
         this.username = username;
         this.sender = sender;
@@ -25,6 +29,8 @@ public class Message implements Parcelable
         this.date = date;
         this.img =  Arrays.toString(img);
         this.imgBytes = img;
+        if(imgBytes!=null)
+            toBitmap();
     }
 
     public Message(String sender, String text, String chatName, String username) {
@@ -38,6 +44,7 @@ public class Message implements Parcelable
 
     public Message(String sender, byte[] img,String chatName,String username)
     {
+        this.id = -1;
         this.sender = sender;
         this.text = null;
         this.img = Arrays.toString(img);
@@ -45,9 +52,11 @@ public class Message implements Parcelable
         this.username = username;
         this.imgBytes = img;
         this.date = new Date().toString();
+        toBitmap();
     }
 
-    public Message(String sender, byte[] img,String chatName,String username,String date) {
+    public Message(int id,String sender, byte[] img,String chatName,String username,String date) {
+        this.id = id;
         this.sender = sender;
         this.text = null;
         this.img = Arrays.toString(img);
@@ -55,9 +64,11 @@ public class Message implements Parcelable
         this.username = username;
         this.date = date;
         this.imgBytes = img;
+        toBitmap();
     }
 
-    public Message(String sender, String text,String chatName,String username,String date) {
+    public Message(int id,String sender, String text,String chatName,String username,String date) {
+        this.id = id;
         this.sender = sender;
         this.text = text;
         this.chatName = chatName;
@@ -67,44 +78,25 @@ public class Message implements Parcelable
         this.imgBytes = null;
     }
 
-    protected Message(Parcel in) {
-        chatName = in.readString();
-        sender = in.readString();
-        text = in.readString();
-        username = in.readString();
-        date = in.readString();
-        img = in.readString();
-
-        String[] byteValues = img.substring(1, img.length() - 1).split(",");
-        imgBytes = new byte[byteValues.length];
-
-        for (int i=0, len=imgBytes.length; i<len; i++)
-            imgBytes[i] = Byte.parseByte(byteValues[i].trim());
-
+    public void toBitmap()
+    {
+        this.bitmap = BitmapFactory.decodeByteArray(imgBytes, 0, imgBytes.length);
     }
 
-    public static final Creator<Message> CREATOR = new Creator<Message>() {
-        @Override
-        public Message createFromParcel(Parcel in) {
-            return new Message(in);
-        }
+    public Bitmap getBitmap() {
+        return bitmap;
+    }
 
-        @Override
-        public Message[] newArray(int size) {
-            return new Message[size];
-        }
-    };
+    public int getId() {
+        return id;
+    }
 
-    public void setChatName(String chatName) {
-        this.chatName = chatName;
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getUsername() {
         return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public String getDate() {
@@ -115,20 +107,12 @@ public class Message implements Parcelable
         return sender;
     }
 
-    public void setSender(String sender) {
-        this.sender = sender;
-    }
-
     public String getText() {
         return text;
     }
 
     public byte[] getImgBytes() {
         return imgBytes;
-    }
-
-    public void setText(String text) {
-        this.text = text;
     }
 
     public String getChatName()
@@ -139,21 +123,6 @@ public class Message implements Parcelable
     public String getStringImg()
     {
         return  this.img;
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel parcel, int i) {
-        parcel.writeString(chatName);
-        parcel.writeString(sender);
-        parcel.writeString(text);
-        parcel.writeString(username);
-        parcel.writeString(date);
-        parcel.writeString(img);
     }
 
     @Override

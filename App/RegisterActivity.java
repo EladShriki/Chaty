@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -24,7 +25,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     String host = MainActivity.host;
 
     EditText etRUser,etRPass,etREmail;
-    Button btnSub,btnRLogin;
+    Button btnSub;
     TextView tvNameCheck;
 
     @Override
@@ -41,10 +42,25 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
         tvNameCheck = (TextView) findViewById(R.id.tvNameCheck);
 
         btnSub = (Button)findViewById(R.id.btnSub);
-        btnRLogin = (Button)findViewById(R.id.btnRLogin);
 
         btnSub.setOnClickListener(this);
-        btnRLogin.setOnClickListener(this);
+
+        Toolbar toolbar = (Toolbar) findViewById(R.id.registerToolBar);
+        setSupportActionBar(toolbar);
+
+        toolbar.setNavigationIcon(getResources().getDrawable(R.drawable.back));
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onBackPressed();
+            }
+        });
+    }
+
+    @Override
+    public void onBackPressed()
+    {
+        startActivity(new Intent(this,MainActivity.class));
     }
 
     @Override
@@ -94,10 +110,6 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                 } else
                     Toast.makeText(this, "Invalid password!", Toast.LENGTH_SHORT).show();
             }
-        }
-        if(view==btnRLogin)
-        {
-            startActivity(new Intent(this,MainActivity.class));
         }
     }
 
