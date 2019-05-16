@@ -32,9 +32,9 @@ public class ProfileServlet extends HttpServlet
 				stat.setString(1, username);
 				ResultSet rs = stat.executeQuery();
 				if(rs.next())
-					if(rs.getString(1)!=null)
-						if(Long.parseLong(rs.getString(1))!=imgdate)
-						{
+//					if(rs.getString(1)!=null)
+//						if(Long.parseLong(rs.getString(1))!=imgdate)
+//						{
 							sql = "SELECT status,imgDate,image from chaty.users where username= ?";
 							stat = connection.prepareStatement(sql);
 							stat.setString(1, username);
@@ -44,7 +44,7 @@ public class ProfileServlet extends HttpServlet
 								res.getOutputStream().println(rs.getString(1)+","+rs.getString(2)+","+rs.getString(3));
 								System.out.println("Profile Sent!");
 							}
-						}	
+//						}
 			}
 			catch (ClassNotFoundException e1)
 			{

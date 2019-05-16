@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -92,6 +93,9 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         reciver = getIntent().getStringExtra("Username");
 
+
+        String intentType = getIntent().getStringExtra("intent");
+
         String type = null;
         try {
             type = getIntent().getStringExtra("type");
@@ -105,7 +109,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         if(pos==-1)
         {
             for(int i=0;i<MainPageActivity.chats.size();i++)
-                if(MainPageActivity.chats.get(i).getChatName().equals(reciver)) {
+                if(MainPageActivity.chats.get(i).getChatName().toLowerCase().equals(reciver.toLowerCase())) {
                     pos = i;
                     break;
                 }
@@ -157,20 +161,42 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         Bitmap img=null;
 
-        if(type!=null) {
-            if (type.equals("user")) {
-                img = Bitmap.createScaledBitmap(((Chat) MainPageActivity.userAdapter.getItem(pos)).getProfileImg(), 125, 125, false);
-                img = getCircleBitmap(img);
+        if(intentType.equals("intent")) {
+            if (type != null) {
+                if (type.equals("user")) {
+                    img = Bitmap.createScaledBitmap(((Chat) MainPageActivity.userAdapter.getItem(pos)).getProfileImg(), 125, 125, false);
+                }
+            } else {
+                ProfileImgService profileImgService = new ProfileImgService();
+                profileImgService.getProfileImg(reciver, pos);
+
+                try {
+                    img = Bitmap.createScaledBitmap(MainPageActivity.chats.get(pos).getProfileImg(), 125, 125, false);
+                } catch (Exception e) {
+                    Log.e("Error", e.getMessage());
+                }
             }
         }
-        else {
-            ProfileImgService profileImgService = new ProfileImgService();
-            profileImgService.getProfileImg(reciver, pos);
-
-            img = Bitmap.createScaledBitmap(MainPageActivity.chats.get(pos).getProfileImg(), 125, 125, false);
-            img = getCircleBitmap(img);
+        else
+        {
+            String root = Environment.getExternalStorageDirectory().toString();
+            File myDir = new File(root + "/Chaty/profile_Img");
+            myDir.mkdirs();
+            String fname = reciver + ".jpg";
+            File file = new File(myDir, fname);
+            if (file.exists()) {
+                Bitmap tempImg = BitmapFactory.decodeFile(file.getAbsolutePath());
+                img = Bitmap.createScaledBitmap(tempImg,125,125,false);
+            }
+            else {
+                Bitmap tempImg = BitmapFactory.decodeResource(this.getResources(),
+                        R.drawable.user);
+                img = Bitmap.createScaledBitmap(tempImg,125,125,false);
+            }
         }
-        if(img!=null) {
+        if (img != null)
+        {
+            img = getCircleBitmap(img);
             Drawable profile = new BitmapDrawable(getResources(), img);
 
             getSupportActionBar().setLogo(profile);
@@ -288,8 +314,9 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     {
         ChatsDB db = new ChatsDB(context);
         db.open();
-        messages = db.getAllMessagesByName(reciver);
+        messages = db.getAllMessagesByName(reciver,sender);
         db.close();
+        Collections.sort(messages);
         final MessageAdapter messageAdapter = new MessageAdapter(context,0,messages);
         lvMsg.post(new Runnable() {
             @Override
@@ -447,6 +474,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         super.onActivityResult(requestCode, resultCode, data);
+        refreshList();
         if (resultCode == this.RESULT_CANCELED) {
             return;
         }
@@ -654,12 +682,22 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         public void onReceive(Context context, Intent intent)
         {
             int id = intent.getIntExtra("ID",-1);
+            if(notificationID==-1)
+            {
+                for(int i=0;i<MessageService.msgGroups.size();i++)
+                    if(MessageService.msgGroups.get(i).getName().equals(reciver))
+                        notificationID = MessageService.msgGroups.get(i).getId();
+            }
             if(id==notificationID) {
-                try {
+                try
+                {
+                    for(int i=0;i<MessageService.msgGroups.size();i++)
+                        if(MessageService.msgGroups.get(i).getId()==notificationID)
+                            MessageService.msgGroups.get(i).deleteAllMsgs();
                     refreshList();
                     NotificationManager mNotificationManager =
                             (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                    mNotificationManager.cancel(intent.getIntExtra("ID", -1));
+                    mNotificationManager.cancel(notificationID);
                 } catch (Exception e) {
                     Log.i("Chaty", e.getMessage());
                 }

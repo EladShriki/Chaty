@@ -10,6 +10,13 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
@@ -86,39 +93,6 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
         lvChats.setEmptyView(findViewById(R.id.tvLoading));
         lvChats.setOnItemClickListener(this);
 
-//        new Thread()
-//        {
-//            public void run()
-//            {
-//                chatsDB.open();
-//
-//                messages = chatsDB.getAllMessages();
-//
-//                chatsDB.close();
-//
-//                sortMessages(messages);
-//
-//                lvChats.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        lvChats.setEmptyView(findViewById(R.id.tvEmpty));
-//                    }
-//                });
-//                tvLoading.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        tvLoading.setAlpha(0);
-//                    }
-//                });
-//                tvEmpty.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        tvEmpty.setAlpha(1);
-//                    }
-//                });
-//            }
-//        }.start();
-
         new Thread()
         {
             public void run()
@@ -152,10 +126,17 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
             }
         }.start();
 
-        Toast.makeText(this, loginSystem.getUsername(), Toast.LENGTH_SHORT).show();
-
         toolbar = findViewById(R.id.toolBar);
         setSupportActionBar(toolbar);
+
+        getSupportActionBar().setTitle("  Chaty");
+
+        Bitmap img = BitmapFactory.decodeResource(context.getResources(),
+                R.drawable.chaty);
+        img = Bitmap.createScaledBitmap(img,125,125,false);
+        Drawable profile = new BitmapDrawable(getResources(), img);
+
+        getSupportActionBar().setLogo(profile);
 
         Intent imgs = new Intent(this,ProfileImgService.class);
         startService(imgs);
@@ -502,23 +483,24 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
         tvProg = (TextView) view1.findViewById(R.id.tvProgress);
         progressBar = (ProgressBar)view1.findViewById(R.id.progressBar);
 
-        Button btnCancel = (Button)view1.findViewById(R.id.btnCancel);
+        mBuilder.setCancelable(false);
 
-        mBuilder.setView(view1);
-        dialog = mBuilder.create();
+        final Thread thread = new historyThread(this,loginSystem.getUsername(),idList);
+        thread.start();
 
-        btnCancel.setOnClickListener(new View.OnClickListener() {
+        mBuilder.setNegativeButton("Cencel", new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(View view)
-            {
+            public void onClick(DialogInterface dialogInterface, int i) {
                 dialog.dismiss();
+                ((historyThread)thread).kill();
             }
         });
 
+        mBuilder.setView(view1);
+        dialog = mBuilder.create();
+        dialog.setCanceledOnTouchOutside(false);
         dialog.show();
 
-        Thread thread = new historyThread(this,loginSystem.getUsername(),idList);
-        thread.start();
     }
 
     public void makeChats(ArrayList<String> chatsName)
@@ -596,11 +578,13 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
         Intent intent = new Intent(this,ChatActivity.class);
         if(lvChats.getAdapter().equals(chatAdapter)) {
             intent.putExtra("Username", chats.get(i).getChatName());
+            intent.putExtra("intent","intent");
             intent.putExtra("pos", i);
         }
         else
         {
-            intent.putExtra("Username", ((Chat)userAdapter.getItem(i)).getChatName());
+            intent.putExtra("Username", ((Chat)userAdapter.getItem(i)).getChatName().toLowerCase());
+            intent.putExtra("intent","intent");
             intent.putExtra("type","user");
             intent.putExtra("pos", i);
         }
@@ -629,6 +613,7 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
         private int msgCnt;
         private Context context;
         private String username;
+        private boolean alive;
 
         public historyThread(Context context, String username,ArrayList<Integer> idList)
         {
@@ -637,6 +622,12 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
             this.username = username;
             this.msgCnt = 0;
             this.allMsg = idList.size();
+            this.alive = true;
+        }
+
+        public void kill()
+        {
+            this.alive = false;
         }
 
         @Override
@@ -648,7 +639,6 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
                     progressBar.setMax(idList.size());
                 }
             });
-            //getAllmsgNum();
             getHistory();
             chatsDB.open();
             messages = chatsDB.getAllMessages();
@@ -691,6 +681,8 @@ public class MainPageActivity extends AppCompatActivity implements AdapterView.O
 
                 while ((line = reader.readLine()) != null)
                 {
+                    if(!alive)
+                        break;
                     int id = Integer.parseInt(line.substring(0, line.indexOf(",")));
                     line = line.substring(line.indexOf(",") + 1);
                     String chatName = line.substring(0, line.indexOf(","));

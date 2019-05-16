@@ -84,14 +84,14 @@ public class ChatsDB extends SQLiteOpenHelper
 //        return temp;
     }
 
-    public ArrayList<Message> getAllMessagesByName(String name) {
+    public ArrayList<Message> getAllMessagesByName(String name,String user) {
 
         ArrayList<Message> l = new ArrayList<Message>();
         String colums = Arrays.toString(allColumns);
 
-        String sql = "SELECT "+colums.substring(1,colums.length()-1)+" FROM "+TABLE_MSG+" WHERE LOWER("+COLUMN_CHAT_NAME+") = ?";
+        String sql = "SELECT "+colums.substring(1,colums.length()-1)+" FROM "+TABLE_MSG+" WHERE LOWER("+COLUMN_CHAT_NAME+") = ? AND "+COLUMN_USERNAME+" = ?";
 
-        String[] args = {name};
+        String[] args = {name,user};
         Cursor cursor= database.rawQuery(sql,args);
 
         if(cursor.getCount()>0)

@@ -88,7 +88,7 @@ public class MessageService extends Service {
         Notification notification = new NotificationCompat.Builder(this,CHANNEL_ID)
                 .setContentTitle("Chaty")
                 .setContentText("Chaty is running")
-                .setSmallIcon(R.drawable.ic_launcher_background)
+                .setSmallIcon(R.drawable.chaty)
                 .setContentIntent(pendingIntent)
                 .setDefaults(0)
                 .build();
@@ -122,6 +122,7 @@ public class MessageService extends Service {
                 username = line.substring(0, line.indexOf(","));
                 line = line.substring(line.indexOf(",") + 1);
                 msg = line.substring(0, line.indexOf(","));
+                msg = msg.replace("\\n", "\n");
                 line = line.substring(line.indexOf(",") + 1);
                 String date = line.substring(0, line.indexOf(","));
                 line = line.substring(line.indexOf(",") + 1);
@@ -195,7 +196,7 @@ public class MessageService extends Service {
                     new NotificationCompat.Builder(this, CHANNEL_ID)
                             .setContentTitle("Chaty")
                             .setContentText(countMsgs() + " new messages from " + howManyChats() + " chats")
-                            .setSmallIcon(R.drawable.ic_launcher_background)
+                            .setSmallIcon(R.drawable.chaty)
                             .setContentIntent(pendingIntent)
                             .setStyle(new NotificationCompat.InboxStyle()
                                     .setBigContentTitle(countMsgs() + " new messages from " + howManyChats() + " chats")
@@ -237,8 +238,6 @@ public class MessageService extends Service {
     {
         msgGroup msg = getMsgGroup(sender);
 
-        sendOutBoradcast(msg.getId());
-
         NotificationCompat.Builder mBuilder =
                 new NotificationCompat.Builder(this.getApplicationContext(), "Messeges");
 
@@ -246,6 +245,7 @@ public class MessageService extends Service {
 
         int id = msg.getId();
 
+        ii.putExtra("intent","pendingIntent");
         ii.putExtra("int_id",id);
         ii.putExtra("Username",sender);
 
@@ -283,6 +283,8 @@ public class MessageService extends Service {
         }
 
         mNotificationManager.notify(msg.getId(), mBuilder.build());
+
+        sendOutBoradcast(msg.getId());
     }
 
     private Bitmap getCircleBitmap(Bitmap bitmap) {

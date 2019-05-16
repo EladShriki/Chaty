@@ -53,21 +53,30 @@ public class ChatServlet extends HttpServlet
 				byte[] img = rs.getBytes(5);
 				String imgString = Arrays.toString(img);
 				id = rs.getString(3);
+				String msg = rs.getString(2);
+				msg = msg.replace("\n", "\\n");
+				String senderReturn = rs.getString(1);
+				String date = rs.getString(4);
 				
-				res.getOutputStream().println(id+","+rs.getString(1)+","+rs.getString(2)+","+rs.getString(4)+","+imgString);
-				System.out.println("Message Found!");
 				
 				
 				sql = "Insert into chaty.msg_history (sender,text,chatName,username,date,img) values (?,?,?,?,?,?)";
-				stat = connection.prepareStatement(sql);
+				stat = connection.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
 				stat.setString(1, rs.getString(1));
-				stat.setString(2, rs.getString(2));
+				stat.setString(2, msg);
 				stat.setString(3, rs.getString(1));
 				//stat.setString(3, reciver);
 				stat.setString(4, sender);
 				stat.setString(5, rs.getString(4));
 				stat.setBytes(6, img);
 				stat.executeUpdate();
+				
+				ResultSet GeneratedKeys = stat.getGeneratedKeys();
+				if(GeneratedKeys.next())
+				{
+					res.getOutputStream().println(GeneratedKeys.getLong(1)+","+senderReturn+","+msg+","+date+","+imgString);
+					System.out.println("Message Found!");
+				}
 				
 				sql = "DELETE FROM chaty.messages WHERE idMessages=?";
 				stat = connection.prepareStatement(sql);

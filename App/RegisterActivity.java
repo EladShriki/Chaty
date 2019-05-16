@@ -24,9 +24,8 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
 
     String host = MainActivity.host;
 
-    EditText etRUser,etRPass,etREmail;
+    EditText etRUser,etRPass,etREmail,etRConPass;
     Button btnSub;
-    TextView tvNameCheck;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +38,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
         etRUser = (EditText)findViewById(R.id.etRUser);
         etRPass = (EditText)findViewById(R.id.etRPass);
         etREmail = (EditText)findViewById(R.id.etREmail);
-        tvNameCheck = (TextView) findViewById(R.id.tvNameCheck);
+        etRConPass = (EditText)findViewById(R.id.etRConPass);
 
         btnSub = (Button)findViewById(R.id.btnSub);
 
@@ -70,43 +69,47 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
         {
             if(nameCheck())
             {
-                tvNameCheck.setText("");
                 String username = etRUser.getText().toString();
                 String password = etRPass.getText().toString();
                 String eMail = etREmail.getText().toString();
 
-                if (goodPassword(password)) {
-                    if (realEmail(eMail)) {
-                        try {
-                            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-                            messageDigest.update(password.getBytes());
-                            String hashPass = bytesToHex(messageDigest.digest());
+                if (goodPassword(password))
+                {
+                    if(password.equals(etRConPass.getText().toString())) {
+                        if (realEmail(eMail)) {
+                            try {
+                                MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+                                messageDigest.update(password.getBytes());
+                                String hashPass = bytesToHex(messageDigest.digest());
 
-                            String urlParameters = "username=" + username + "&password=" + hashPass + "&Email=" + eMail + "&nameCheck=" + 1;
-                            String url = host + "/TestServer/Register";
-                            HttpsURLConnection conn = CustomCAHttpProvider.getConnection(this, url);
+                                String urlParameters = "username=" + username + "&password=" + hashPass + "&Email=" + eMail + "&nameCheck=" + 1;
+                                String url = host + "/TestServer/Register";
+                                HttpsURLConnection conn = CustomCAHttpProvider.getConnection(this, url);
 
-                            conn.setDoOutput(true);
+                                conn.setDoOutput(true);
 
-                            OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream());
+                                OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream());
 
-                            writer.write(urlParameters);
-                            writer.flush();
+                                writer.write(urlParameters);
+                                writer.flush();
 
-                            String line;
-                            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                                String line;
+                                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
-                            if ((line = reader.readLine()) != null) {
+                                if ((line = reader.readLine()) != null) {
 
+                                }
+                                writer.close();
+                                reader.close();
+                                Toast.makeText(this, "User Created!", Toast.LENGTH_LONG).show();
+                                startActivity(new Intent(this, MainActivity.class));
+                            } catch (Exception e) {
                             }
-                            writer.close();
-                            reader.close();
-                            Toast.makeText(this, "User Created!", Toast.LENGTH_LONG).show();
-                            startActivity(new Intent(this, MainActivity.class));
-                        } catch (Exception e) {
-                        }
-                    } else
-                        Toast.makeText(this, "Use Gmail mail please!", Toast.LENGTH_SHORT).show();
+                        } else
+                            Toast.makeText(this, "Use Gmail mail please!", Toast.LENGTH_SHORT).show();
+                    }
+                    else
+                        Toast.makeText(this, "Confirm Password isn't matching!", Toast.LENGTH_SHORT).show();
                 } else
                     Toast.makeText(this, "Invalid password!", Toast.LENGTH_SHORT).show();
             }
@@ -127,7 +130,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     {
         if (password != null)
         {
-            Pattern p = Pattern.compile("^[a-z0-9](\\.?[a-z0-9]){5,}$");
+            Pattern p = Pattern.compile("^[A-za-z0-9](\\.?[A-Za-z0-9]){5,}$");
             Matcher m = p.matcher(password);
             return m.find();
         }
@@ -138,7 +141,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     {
         if (email != null)
         {
-            Pattern p = Pattern.compile("^[a-z0-9](\\.?[a-z0-9]){5,}@gmail\\.com$");
+            Pattern p = Pattern.compile("^[A-Za-z0-9](\\.?[A-Za-z0-9]){5,}@gmail\\.com$");
             Matcher m = p.matcher(email);
             return m.find();
         }
@@ -149,7 +152,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
     {
         if (name != null)
         {
-            Pattern p = Pattern.compile("^[a-z0-9](\\.?[a-z0-9]){5,}$");
+            Pattern p = Pattern.compile("^[A-Za-z0-9](\\.?[A-Za-z0-9]){5,}$");
             Matcher m = p.matcher(name);
             return m.find();
         }
@@ -183,7 +186,10 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                 reader.close();
 
                 if(line.equals("Username in use!"))
+                {
+                    Toast.makeText(this, "Username in use!", Toast.LENGTH_SHORT).show();
                     return false;
+                }
                 else
                     return true;
             } catch (Exception e) {
@@ -191,7 +197,7 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
             }
         }
         else
-            tvNameCheck.setText("The Name is Invalid!");
+            Toast.makeText(this, "Username is Invalid!", Toast.LENGTH_SHORT).show();
         return false;
     }
 }

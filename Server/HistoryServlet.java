@@ -88,7 +88,7 @@ public class HistoryServlet extends HttpServlet
 					byte[] img = rs.getBytes(7);
 					String imgString = Arrays.toString(img);
 					
-					res.getOutputStream().println(rs.getString(1)+","+rs.getString(2)+","+rs.getString(3)+","+rs.getString(4)+
+					res.getOutputStream().println(rs.getString(1)+","+rs.getString(2).toLowerCase()+","+rs.getString(3)+","+rs.getString(4)+
 							","+rs.getString(5)+","+rs.getString(6)+","+imgString);
 				}
 				System.out.println("History to "+username+" was sent!");

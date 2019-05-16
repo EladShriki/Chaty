@@ -2,13 +2,12 @@ package com.example.eladshriki.chaty;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.Parcel;
-import android.os.Parcelable;
+import android.support.annotation.NonNull;
 
 import java.util.Arrays;
 import java.util.Date;
 
-public class Message
+public class Message implements Comparable
 {
     private int id;
     private String chatName;
@@ -135,5 +134,11 @@ public class Message
                 ", date='" + date + '\'' +
                 ", img=" + img +
                 '}';
+    }
+
+    @Override
+    public int compareTo(@NonNull Object o) {
+        int id = ((Message)o).getId();
+        return this.id-id;
     }
 }

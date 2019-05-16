@@ -25,11 +25,11 @@ import java.util.Properties;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    static String host = "https://10.100.102.3:8443";
+    static String host = "https://10.100.102.13:8443";
     static boolean checkLogin = true;
 
     EditText etUsername, etPassword;
-    Button btnLogin, btnReg, btnHost;
+    Button btnLogin, btnReg;
     static LoginSystem loginSystem;
 
     @Override
@@ -58,11 +58,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         etPassword = (EditText)findViewById(R.id.etPassword);
         btnLogin = (Button)findViewById(R.id.btnLogin);
         btnReg = (Button)findViewById(R.id.btnReg);
-        btnHost = (Button)findViewById(R.id.btnHost);
 
         btnLogin.setOnClickListener(this);
         btnReg.setOnClickListener(this);
-        btnHost.setOnClickListener(this);
 
     }
 
@@ -80,34 +78,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         {
             String username = etUsername.getText().toString();
             String password = etPassword.getText().toString();
+            etPassword.setText("");
             try {
                 login(username,password);
             } catch (NoSuchAlgorithmException e) {
                 e.printStackTrace();
             }
-        }
-        if(btnHost==view)
-        {
-            AlertDialog.Builder mBuilder = new AlertDialog.Builder(MainActivity.this);
-            View view1 = getLayoutInflater().inflate(R.layout.host_dialog,null);
-            final EditText etHost = (EditText)view1.findViewById(R.id.etHost);
-            etHost.setText(host);
-            Button btnHost = (Button)view1.findViewById(R.id.btnDialog);
-
-            mBuilder.setView(view1);
-            final AlertDialog dialog = mBuilder.create();
-
-            btnHost.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view)
-                {
-                    changeHostConfig(etHost.getText().toString());
-                    Toast.makeText(MainActivity.this, "Host Changed Successfully!", Toast.LENGTH_SHORT).show();
-                    dialog.dismiss();
-                }
-            });
-
-            dialog.show();
         }
         if(btnReg==view)
         {

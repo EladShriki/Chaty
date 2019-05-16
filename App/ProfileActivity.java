@@ -136,30 +136,26 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
         View view1 = getLayoutInflater().inflate(R.layout.status_change,null);
         final EditText etStatus = (EditText)view1.findViewById(R.id.etStatusCng);
         etStatus.setText(status);
-        Button btnYes = (Button)view1.findViewById(R.id.btnYes);
-        Button btnNo = (Button)view1.findViewById(R.id.btnNo);
 
         mBuilder.setView(view1);
         final android.support.v7.app.AlertDialog dialog = mBuilder.create();
 
-        btnYes.setOnClickListener(new View.OnClickListener() {
+        dialog.setButton(DialogInterface.BUTTON_NEGATIVE, "Cencel", new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(View view)
-            {
-                ProfileActivity.status = etStatus.getText().toString();
-                changeStatus();
-                dialog.dismiss();
-
-            }
-        });
-        btnNo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+            public void onClick(DialogInterface dialogInterface, int i) {
                 ProfileActivity.status = status;
                 dialog.dismiss();
             }
         });
 
+        dialog.setButton(DialogInterface.BUTTON_POSITIVE, "Confirm", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                ProfileActivity.status = etStatus.getText().toString();
+                changeStatus();
+                dialog.dismiss();
+            }
+        });
         dialog.show();
     }
 
@@ -233,7 +229,7 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
             Log.e("Chaty",e.getMessage());
         }
         Bitmap img = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-        imgProfile.setImageBitmap(Bitmap.createScaledBitmap(getResizedBitmap(img,300),800,900,false));
+        imgProfile.setImageBitmap(getResizedBitmap(img,1200));
     }
 
     public Bitmap getResizedBitmap(Bitmap image, int maxSize) {

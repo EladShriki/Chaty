@@ -108,19 +108,4 @@
         android:textColor="#ffffff"
         android:textSize="20dp" />
 
-    <Button
-        android:id="@+id/btnHost"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:layout_gravity="center"
-        android:background="@drawable/buttonshape"
-        android:shadowColor="#a9a9a9"
-        android:shadowDx="0"
-        android:shadowDy="0"
-        android:shadowRadius="5"
-        android:text="Change Host"
-        android:textColor="#ffffff"
-        android:textSize="20dp" />
-
 </LinearLayout>
